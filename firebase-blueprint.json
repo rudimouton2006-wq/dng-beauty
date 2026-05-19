@@ -1,0 +1,32 @@
+{
+  "entities": {
+    "booking": {
+      "title": "Booking",
+      "description": "An appointment booking in the DnG Beauty salon.",
+      "type": "object",
+      "properties": {
+        "serviceId": { "type": "string", "description": "The unique ID of the service." },
+        "serviceName": { "type": "string", "description": "The name of the service at time of booking." },
+        "customerName": { "type": "string", "description": "Full name of the customer." },
+        "customerEmail": { "type": "string", "format": "email", "description": "Email address of the customer." },
+        "customerPhone": { "type": "string", "description": "Contact phone number." },
+        "date": { "type": "string", "format": "date", "description": "Date of the appointment (YYYY-MM-DD)." },
+        "time": { "type": "string", "description": "Time of the appointment (HH:MM)." },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "confirmed", "cancelled"],
+          "description": "Current status of the booking."
+        },
+        "totalPrice": { "type": "number", "description": "Agreed price at time of booking." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the booking was created." }
+      },
+      "required": ["serviceName", "customerName", "customerEmail", "customerPhone", "date", "time", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "bookings/{bookingId}": {
+      "schema": "booking",
+      "description": "Collection of all appointment bookings."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "DnG Beauty",
+  "description": "Premium lash artistry, brow aesthetics, and training academy. Certified experts focusing on healthy lashes and amazing retention.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

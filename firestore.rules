@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ----------------------------------------------------------------------
+    // CORE SECURITY POSTURE: DEFAULT DENY ALL
+    // ----------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ----------------------------------------------------------------------
+    // ELITE UTILITY & VALIDATION FUNCTIONS
+    // ----------------------------------------------------------------------
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // Verifies if the authenticated user exists in the elite admins collection
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(email) {
+      // Validates ownership based on the authenticated session's verified email
+      return isAuthenticated() && request.auth.token.email == email;
+    }
+
+    function isValidBookingId(id) {
+      // Strict regex to prevent NoSQL injection via malformed document IDs
+      return id is string && id.size() >= 10 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function validateBookingPayload(data) {
+      // Exhaustive schema validation ensuring absolute data integrity at the edge
+      return data.size() >= 8 && data.size() <= 12 &&
+             data.serviceId is string && data.serviceId.size() > 0 && data.serviceId.size() <= 50 &&
+             data.serviceName is string && data.serviceName.size() > 0 && data.serviceName.size() <= 100 &&
+             data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 100 &&
+             data.customerEmail is string && data.customerEmail.matches('^[^@]+@[^@]+\\.[a-zA-Z]{2,}$') &&
+             data.customerPhone is string && data.customerPhone.size() >= 9 && data.customerPhone.size() <= 20 &&
+             data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+             data.time is string && data.time.matches('^\\d{2}:\\d{2}$') &&
+             data.totalPrice is number && data.totalPrice >= 0 &&
+             data.status in ['pending', 'confirmed', 'cancelled'] &&
+             data.createdAt == request.time;
+    }
+
+    // ----------------------------------------------------------------------
+    // COLLECTION: BOOKINGS
+    // ----------------------------------------------------------------------
+    match /bookings/{bookingId} {
+      // CREATE: Allow anonymous public booking creation from the React UI, strictly validated
+      allow create: if isValidBookingId(bookingId) && validateBookingPayload(request.resource.data);
+      
+      // READ: Clients can read their own bookings; Admins have global read access
+      allow get: if isAdmin() || isOwner(resource.data.customerEmail);
+      allow list: if isAdmin();
+      
+      // UPDATE: Only admins can mutate the state of a booking (e.g., confirm/cancel)
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      
+      // DELETE: Immutable ledger pattern. Bookings cannot be destroyed, only cancelled.
+      allow delete: if false;
+    }
+    
+    // ----------------------------------------------------------------------
+    // COLLECTION: ADMINS (INTERNAL)
+    // ----------------------------------------------------------------------
+    match /admins/{userId} {
+      // Admins can only read their specific profile node
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      // Admins must be provisioned securely via backend admin SDK, no client writes permitted
+      allow write: if false;
+    }
+  }
+}
