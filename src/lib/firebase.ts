@@ -23,3 +23,19 @@ const app = initializeApp(firebaseConfig);
 // Export the Auth and Database instances for the rest of the app to use
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+// --- Custom Error Handling Utilities ---
+
+export type OperationType = 'create' | 'read' | 'update' | 'delete';
+
+export const handleFirestoreError = (error: any, operation: OperationType): string => {
+  console.error(`Firestore ${operation} error:`, error);
+  
+  if (error?.code === 'permission-denied') {
+    return "You do not have permission to perform this action.";
+  }
+  if (error?.code === 'unavailable') {
+    return "Network error. Please check your connection and try again.";
+  }
+  
+  return "An unexpected error occurred processing your booking. Please try again.";
+};
