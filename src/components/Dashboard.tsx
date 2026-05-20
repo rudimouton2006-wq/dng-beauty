@@ -6,15 +6,17 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../lib/firebase";
 import { signOut } from "firebase/auth";
-import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { motion } from "motion/react";
-import { LogOut, Calendar, Users, Clock, Loader2, User, Banknote } from "lucide-react";
+import { 
+  LogOut, Calendar, Clock, Loader2, User, Banknote, 
+  CheckCircle2, Trash2, AlertCircle, Sparkles
+} from "lucide-react";
 
 interface DashboardProps {
   setPage: (page: string) => void;
 }
 
-// Updated interface to perfectly match your database labels
 interface BookingData {
   id: string;
   customerName?: string;
@@ -24,68 +26,94 @@ interface BookingData {
   date?: string;
   time?: string;
   totalPrice?: number;
-  status?: string;
+  status?: 'pending' | 'confirmed' | 'completed';
 }
 
 export default function Dashboard({ setPage }: DashboardProps) {
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
-  const [uniqueClients, setUniqueClients] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Security Check & Data Fetch
+  const fetchDashboardData = async () => {
+    if (!auth.currentUser) {
+      setPage("login");
+      return;
+    }
+
+    try {
+      const bookingsRef = collection(db, "bookings");
+      const q = query(bookingsRef, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      
+      const fetchedBookings: BookingData[] = [];
+      let revenue = 0;
+      let pending = 0;
+      
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as BookingData;
+        const status = data.status || 'pending'; // Default to pending if not set
+        
+        fetchedBookings.push({ id: doc.id, ...data, status });
+        
+        if (status === 'pending') pending++;
+
+        // Only count revenue for completed or confirmed appointments this month
+        if (data.date && data.totalPrice && (status === 'completed' || status === 'confirmed')) {
+          const bookingDate = new Date(data.date);
+          if (bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear) {
+            revenue += Number(data.totalPrice);
+          }
+        }
+      });
+      
+      setBookings(fetchedBookings);
+      setMonthlyRevenue(revenue);
+      setPendingCount(pending);
+
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      // Kick out anyone who isn't authenticated
-      if (!auth.currentUser) {
-        setPage("login");
-        return;
-      }
-
-      try {
-        const bookingsRef = collection(db, "bookings");
-        // Pull the 20 most recent bookings
-        const q = query(bookingsRef, orderBy("createdAt", "desc"), limit(20));
-        const querySnapshot = await getDocs(q);
-        
-        const fetchedBookings: BookingData[] = [];
-        let revenue = 0;
-        const clients = new Set();
-        
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() as BookingData;
-          fetchedBookings.push({ id: doc.id, ...data });
-          
-          // Count unique clients by email
-          if (data.customerEmail) {
-            clients.add(data.customerEmail);
-          }
-
-          // Calculate revenue for the current month
-          if (data.date && data.totalPrice) {
-            const bookingDate = new Date(data.date);
-            if (bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear) {
-              revenue += Number(data.totalPrice);
-            }
-          }
-        });
-        
-        setBookings(fetchedBookings);
-        setMonthlyRevenue(revenue);
-        setUniqueClients(clients.size);
-
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, [setPage]);
+
+  // --- Database Action Handlers ---
+  const handleUpdateStatus = async (id: string, newStatus: 'confirmed' | 'completed') => {
+    setProcessingId(id);
+    try {
+      const bookingRef = doc(db, "bookings", id);
+      await updateDoc(bookingRef, { status: newStatus });
+      await fetchDashboardData(); // Refresh the data to recalculate revenue and badges
+    } catch (error) {
+      console.error("Error updating status:", error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this booking?")) return;
+    
+    setProcessingId(id);
+    try {
+      const bookingRef = doc(db, "bookings", id);
+      await deleteDoc(bookingRef);
+      await fetchDashboardData(); // Refresh the table
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -101,11 +129,23 @@ export default function Dashboard({ setPage }: DashboardProps) {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
   };
 
+  // --- UI Helpers ---
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'confirmed':
+        return <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 text-[10px] uppercase tracking-widest font-bold rounded-full flex items-center gap-1 w-max"><CheckCircle2 size={12}/> Confirmed</span>;
+      case 'completed':
+        return <span className="px-3 py-1 bg-gray-100 text-gray-600 border border-gray-200 text-[10px] uppercase tracking-widest font-bold rounded-full flex items-center gap-1 w-max"><Sparkles size={12}/> Completed</span>;
+      default:
+        return <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] uppercase tracking-widest font-bold rounded-full flex items-center gap-1 w-max"><Clock size={12}/> Pending</span>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center relative z-20">
         <Loader2 className="animate-spin text-brand-gold mb-4" size={40} />
-        <p className="text-brand-charcoal/50 font-bold tracking-widest uppercase text-sm">Decrypting Vault...</p>
+        <p className="text-brand-charcoal/50 font-bold tracking-widest uppercase text-sm">Syncing Vault...</p>
       </div>
     );
   }
@@ -120,10 +160,10 @@ export default function Dashboard({ setPage }: DashboardProps) {
           className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-black/5 pb-8"
         >
           <div>
-            <h1 className="text-4xl font-black tracking-tighter text-brand-charcoal mb-2">STUDIO DASHBOARD</h1>
+            <h1 className="text-4xl font-black tracking-tighter text-brand-charcoal mb-2">STUDIO COMMAND</h1>
             <p className="text-brand-charcoal/50 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              Secure Connection Active
+              Encrypted Admin Session Active
             </p>
           </div>
           <button 
@@ -134,78 +174,127 @@ export default function Dashboard({ setPage }: DashboardProps) {
           </button>
         </motion.div>
 
-        {/* Quick Stats Grid */}
+        {/* Actionable Stats Grid */}
         <motion.div 
           initial="hidden" animate="visible" variants={fadeUp}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
           <div className="bg-white p-6 shadow-sm border border-black/5">
-            <div className="w-10 h-10 bg-brand-gold/10 text-brand-gold flex items-center justify-center mb-4">
+            <div className="w-10 h-10 bg-brand-charcoal/5 text-brand-charcoal flex items-center justify-center mb-4">
               <Calendar size={20} />
             </div>
             <h3 className="text-3xl font-black text-brand-charcoal mb-1">{bookings.length}</h3>
-            <p className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Total Bookings</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Total Ledger Entries</p>
           </div>
-          <div className="bg-white p-6 shadow-sm border border-black/5">
-            <div className="w-10 h-10 bg-brand-charcoal/5 text-brand-charcoal flex items-center justify-center mb-4">
-              <Users size={20} />
+          
+          <div className="bg-white p-6 shadow-sm border border-amber-200 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -z-10"></div>
+            <div className="w-10 h-10 bg-amber-100 text-amber-600 flex items-center justify-center mb-4 border border-amber-200">
+              <AlertCircle size={20} />
             </div>
-            <h3 className="text-3xl font-black text-brand-charcoal mb-1">{uniqueClients}</h3>
-            <p className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Unique Clients</p>
+            <h3 className="text-3xl font-black text-brand-charcoal mb-1">{pendingCount}</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-600/70">Requires Confirmation</p>
           </div>
-          <div className="bg-white p-6 shadow-sm border border-black/5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-brand-gold/5 rounded-bl-full -z-10"></div>
-            <div className="w-10 h-10 bg-green-50 text-green-600 flex items-center justify-center mb-4 border border-green-100">
+
+          <div className="bg-white p-6 shadow-sm border border-green-200 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-full -z-10"></div>
+            <div className="w-10 h-10 bg-green-100 text-green-600 flex items-center justify-center mb-4 border border-green-200">
               <Banknote size={20} />
             </div>
-            <h3 className="text-3xl font-black text-brand-charcoal mb-1">R{monthlyRevenue}</h3>
-            <p className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Revenue (This Month)</p>
+            <h3 className="text-3xl font-black text-brand-charcoal mb-1">R{monthlyRevenue.toLocaleString()}</h3>
+            <p className="text-xs font-bold uppercase tracking-widest text-green-700/70">Secured Revenue (This Month)</p>
           </div>
         </motion.div>
 
-        {/* Bookings Ledger */}
+        {/* Interactive Master Ledger */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white shadow-xl border border-black/5 overflow-hidden">
           <div className="p-8 border-b border-black/5 bg-gray-50 flex items-center justify-between">
-            <h2 className="text-lg font-black tracking-widest uppercase text-brand-charcoal">Recent Inquiries</h2>
+            <h2 className="text-lg font-black tracking-widest uppercase text-brand-charcoal">Active Bookings Console</h2>
           </div>
           
           {bookings.length === 0 ? (
             <div className="p-16 text-center">
               <Clock className="mx-auto text-brand-charcoal/20 mb-4" size={48} />
-              <p className="text-brand-charcoal/50 font-medium">No recent bookings found in the database.</p>
+              <p className="text-brand-charcoal/50 font-medium">No bookings found in the secure ledger.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
+              <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                   <tr className="bg-white border-b border-black/5 text-xs uppercase tracking-widest text-brand-charcoal/50">
-                    <th className="p-6 font-bold">Client</th>
-                    <th className="p-6 font-bold">Service</th>
-                    <th className="p-6 font-bold">Date & Time</th>
-                    <th className="p-6 font-bold">Contact</th>
-                    <th className="p-6 font-bold text-right">Value</th>
+                    <th className="p-6 font-bold">Client Profile</th>
+                    <th className="p-6 font-bold">Service Details</th>
+                    <th className="p-6 font-bold">Schedule</th>
+                    <th className="p-6 font-bold">Status</th>
+                    <th className="p-6 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {bookings.map((booking) => (
-                    <tr key={booking.id} className="border-b border-black/5 hover:bg-gray-50 transition-colors">
+                    <tr key={booking.id} className={`border-b border-black/5 transition-colors ${processingId === booking.id ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50'}`}>
+                      
                       <td className="p-6 font-bold text-brand-charcoal flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
-                          <User size={14} />
+                        <div className="w-10 h-10 rounded-full bg-brand-gold/10 text-brand-gold flex items-center justify-center shrink-0">
+                          <User size={16} />
                         </div>
                         <div className="flex flex-col">
-                          <span>{booking.customerName || "Unknown"}</span>
-                          <span className="text-xs font-normal text-brand-charcoal/40">{booking.customerEmail}</span>
+                          <span className="text-base">{booking.customerName || "Unknown"}</span>
+                          <span className="text-xs font-normal text-brand-charcoal/50">{booking.customerEmail}</span>
+                          <span className="text-xs font-normal text-brand-charcoal/50">{booking.customerPhone}</span>
                         </div>
                       </td>
-                      <td className="p-6 text-brand-charcoal/70 font-bold">{booking.serviceName || "Not specified"}</td>
-                      <td className="p-6 text-brand-charcoal/70 font-medium">
-                        {booking.date ? `${booking.date} @ ${booking.time || 'TBD'}` : "Not specified"}
+
+                      <td className="p-6">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-brand-charcoal">{booking.serviceName || "Not specified"}</span>
+                          <span className="text-brand-gold font-black mt-1">
+                            {booking.totalPrice ? `R${booking.totalPrice}` : "—"}
+                          </span>
+                        </div>
                       </td>
-                      <td className="p-6 text-brand-charcoal/70 font-medium">{booking.customerPhone || "No phone"}</td>
-                      <td className="p-6 text-brand-gold font-black text-right">
-                        {booking.totalPrice ? `R${booking.totalPrice}` : "—"}
+
+                      <td className="p-6 text-brand-charcoal/80 font-medium">
+                        {booking.date ? `${booking.date}` : "Not specified"}<br/>
+                        <span className="text-brand-charcoal/50 text-xs">{booking.time ? `@ ${booking.time}` : ""}</span>
                       </td>
+
+                      <td className="p-6">
+                        {getStatusBadge(booking.status || 'pending')}
+                      </td>
+
+                      <td className="p-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {booking.status === 'pending' && (
+                            <button 
+                              onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
+                              disabled={processingId === booking.id}
+                              className="px-3 py-2 bg-brand-charcoal text-white text-xs font-bold uppercase tracking-widest hover:bg-brand-gold transition-colors"
+                            >
+                              Confirm
+                            </button>
+                          )}
+                          
+                          {booking.status === 'confirmed' && (
+                            <button 
+                              onClick={() => handleUpdateStatus(booking.id, 'completed')}
+                              disabled={processingId === booking.id}
+                              className="px-3 py-2 bg-brand-gold text-white text-xs font-bold uppercase tracking-widest hover:bg-brand-charcoal transition-colors"
+                            >
+                              Complete
+                            </button>
+                          )}
+
+                          <button 
+                            onClick={() => handleDelete(booking.id)}
+                            disabled={processingId === booking.id}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete Booking"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                      
                     </tr>
                   ))}
                 </tbody>
