@@ -6,8 +6,8 @@
 import { memo } from "react";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
-import Artist from "./components/Artist";
-import Reviews from "./components/Reviews";
+import Artist from "./Artist";
+import Reviews from "./Reviews";
 
 interface HomeProps {
   setPage: (page: string) => void;
