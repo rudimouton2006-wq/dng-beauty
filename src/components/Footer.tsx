@@ -102,7 +102,12 @@ export default function Footer({ setPage }: FooterProps) {
           variants={fadeUp}
           className="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-black/5 gap-8"
         >
-           <span className="text-[10px] text-brand-charcoal/40 font-black uppercase tracking-widest">© {new Date().getFullYear()} DnG BEAUTY. All rights reserved.</span>
+           <span 
+  onClick={() => setPage("login")} 
+  className="cursor-pointer"
+>
+  © 2026 DnG Beauty. All rights reserved.
+</span>
            <div className="flex items-center gap-10">
               <div className="flex items-center gap-2 text-[10px] text-brand-charcoal/40 font-black uppercase tracking-widest">
                  <MapPin size={12} className="text-brand-gold" /> Cape Town, South Africa

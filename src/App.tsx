@@ -15,7 +15,7 @@ import Gallery from "./components/Gallery.tsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("home");
+  const [currentPage, setPage] = useState("login");
 
   // Scroll to top on page change to ensure pristine viewing state
   useEffect(() => {
