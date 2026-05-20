@@ -22,7 +22,7 @@ const app = initializeApp(firebaseConfig);
 
 // Export the Auth and Database instances
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = getFirestore(app, "ai-studio-191deb0a-fd18-42ac-9288-ee9bd08e9cd7");
 
 // --- Custom Error Handling Utilities ---
 export type OperationType = 'create' | 'read' | 'update' | 'delete';
