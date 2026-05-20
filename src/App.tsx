@@ -15,7 +15,7 @@ import Gallery from "./components/Gallery.tsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
 
 export default function App() {
-  const [currentPage, setPage] = useState("login");
+  const [currentPage, setPage] = useState("home");
 
   // Scroll to top on page change to ensure pristine viewing state
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case "home":
-        return <Home setPage={setCurrentPage} />;
+        return <Home setPage={setPage} />;
       case "services":
         return <Services />;
       case "training":
@@ -33,17 +33,23 @@ export default function App() {
       case "booking":
         return <Booking />;
       case "gallery":
-        return <Gallery setPage={setCurrentPage} />;
+        return <Gallery setPage={setPage} />;
       case "privacy":
         return <PrivacyPolicy />;
+      case "login":
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center relative z-20">
+            <h1 className="text-3xl font-black tracking-widest text-brand-charcoal">VAULT LOGIN (Component Pending)</h1>
+          </div>
+        );
       default:
-        return <Home setPage={setCurrentPage} />;
+        return <Home setPage={setPage} />;
     }
   };
 
   return (
     <div className="min-h-screen selection:bg-brand-gold selection:text-white flex flex-col bg-white overflow-x-hidden relative font-sans text-brand-charcoal">
-      <Navbar currentPage={currentPage} setPage={setCurrentPage} />
+      <Navbar currentPage={currentPage} setPage={setPage} />
       
       <main className="flex-grow relative z-10 w-full" id="main-content" role="main">
         <AnimatePresence mode="wait">
@@ -60,7 +66,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <Footer setPage={setCurrentPage} />
+      <Footer setPage={setPage} />
       
       {/* Absolute Masterpiece Background Elements - Hardware Accelerated */}
       <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden" aria-hidden="true">

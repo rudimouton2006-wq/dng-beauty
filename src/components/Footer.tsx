@@ -103,11 +103,11 @@ export default function Footer({ setPage }: FooterProps) {
           className="flex flex-col md:flex-row justify-between items-center pt-10 border-t border-black/5 gap-8"
         >
            <span 
-  onClick={() => setPage("login")} 
-  className="cursor-pointer"
->
-  © 2026 DnG Beauty. All rights reserved.
-</span>
+             onClick={() => { setPage("login"); scrollToTop(); }} 
+             className="cursor-pointer hover:text-brand-gold transition-colors duration-300 text-sm font-medium text-brand-charcoal/60"
+           >
+             © 2026 DnG Beauty. All rights reserved.
+           </span>
            <div className="flex items-center gap-10">
               <div className="flex items-center gap-2 text-[10px] text-brand-charcoal/40 font-black uppercase tracking-widest">
                  <MapPin size={12} className="text-brand-gold" /> Cape Town, South Africa
