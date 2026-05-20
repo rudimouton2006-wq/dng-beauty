@@ -20,11 +20,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export the Auth and Database instances for the rest of the app to use
+// Export the Auth and Database instances
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-// --- Custom Error Handling Utilities ---
 
+// --- Custom Error Handling Utilities ---
 export type OperationType = 'create' | 'read' | 'update' | 'delete';
 
 export const handleFirestoreError = (error: any, operation: OperationType): string => {
