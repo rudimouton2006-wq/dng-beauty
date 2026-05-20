@@ -1,79 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Inter", sans-serif;
-  --font-sans: "Inter", sans-serif;
-  
-  /* Elite Luxury Palette */
-  --color-brand-gold: #D4AF37;
-  --color-brand-charcoal: #0A0A0A; 
-  --color-brand-cream: #FAFAFA;
+  /* The New Custom Brand Palette */
+  --color-brand-gold: #6b543c; /* The new "Dirty Brown" */
+  --color-brand-charcoal: #0a0a0a; /* Deep, rich Black */
+  --color-brand-light: #f4f5f6; /* Crisp, Cold White */
 }
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  body {
-    @apply font-sans text-brand-charcoal bg-white selection:bg-brand-gold selection:text-white;
-    line-height: 1.6;
-    overflow-x: hidden;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-black tracking-tighter;
-    letter-spacing: -0.05em;
-  }
-
-  /* Force hardware acceleration for flawless kinetic performance */
-  img {
-    transform: translateZ(0);
-    will-change: transform;
-  }
-
-  * {
-    font-family: inherit !important;
-  }
+/* Global resets for the new aesthetic */
+body {
+  background-color: var(--color-brand-light);
+  color: var(--color-brand-charcoal);
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer components {
-  /* Mathematical Layout Rhythm */
-  .luxury-container {
-    @apply max-w-7xl mx-auto px-6 md:px-12 lg:px-20;
+/* Luxury Container Utility */
+@utility luxury-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  @variant sm {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
-
-  /* Master Button Physics & Styling */
-  .minimal-btn {
-    @apply px-10 py-5 bg-brand-charcoal text-white text-xs tracking-[0.25em] uppercase font-black transition-all duration-500 rounded-xl shadow-lg flex items-center justify-center gap-4 hover:bg-brand-gold hover:shadow-[0_8px_30px_rgb(212,175,55,0.3)] hover:-translate-y-1 active:scale-95 active:translate-y-0;
+  @variant lg {
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
-
-  .secondary-btn {
-    @apply px-10 py-5 bg-transparent border-2 border-brand-charcoal text-brand-charcoal text-xs tracking-[0.25em] uppercase font-black transition-all duration-500 rounded-xl flex items-center justify-center gap-4 hover:border-brand-gold hover:text-brand-gold hover:shadow-[0_8px_30px_rgb(212,175,55,0.1)] hover:-translate-y-1 active:scale-95 active:translate-y-0;
-  }
-}
-
-/* Elite Custom Scrollbar Integration */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-gray-50;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-brand-charcoal/20 rounded-full border-2 border-transparent bg-clip-padding hover:bg-brand-gold hover:border-transparent transition-colors duration-500;
-}
-
-/* Utility: Invisible Scrollbar for Horizontal Sliders */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
