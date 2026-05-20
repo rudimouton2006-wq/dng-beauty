@@ -13,6 +13,7 @@ import Training from "./components/Training.tsx";
 import Booking from "./components/Booking.tsx";
 import Gallery from "./components/Gallery.tsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
+import Login from "./components/Login.tsx";
 
 export default function App() {
   const [currentPage, setPage] = useState("home");
@@ -37,9 +38,11 @@ export default function App() {
       case "privacy":
         return <PrivacyPolicy />;
       case "login":
+        return <Login setPage={setPage} />;
+      case "dashboard":
         return (
           <div className="min-h-[60vh] flex items-center justify-center relative z-20">
-            <h1 className="text-3xl font-black tracking-widest text-brand-charcoal">VAULT LOGIN (Component Pending)</h1>
+            <h1 className="text-3xl font-black tracking-widest text-brand-charcoal">STUDIO DASHBOARD (Component Pending)</h1>
           </div>
         );
       default:
