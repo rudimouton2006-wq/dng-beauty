@@ -22,7 +22,9 @@ const app = initializeApp(firebaseConfig);
 
 // Export the Auth and Database instances
 export const auth = getAuth(app);
-export const db = getFirestore(app, "ai-studio-191deb0a-fd18-42ac-9288-ee9bd08e9cd7");
+
+// THE FIX: We removed the long custom ID. Firebase will now correctly auto-connect to your (default) database.
+export const db = getFirestore(app); 
 
 // --- Custom Error Handling Utilities ---
 export type OperationType = 'create' | 'read' | 'update' | 'delete';
