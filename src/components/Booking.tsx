@@ -6,7 +6,8 @@
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState } from "react";
 import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2 } from "lucide-react";
-import { db, handleFirestoreError, OperationType } from "../lib/firebase.ts";
+import { db, handleFirestoreError } from "../lib/firebase";
+import type { OperationType } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 interface Service {
