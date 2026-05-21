@@ -11,12 +11,14 @@
    --color-brand-light: #f4f5f6;
  }
  
+ /* Global resets for the new aesthetic */
  body {
    background-color: var(--color-brand-light);
    color: var(--color-brand-charcoal);
    -webkit-font-smoothing: antialiased;
  }
  
+ /* Luxury Container Utility */
  @utility luxury-container {
    max-width: 80rem;
    margin-left: auto;

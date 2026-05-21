@@ -9,7 +9,7 @@ import { ArrowRight } from "lucide-react";
 import Artist from "./Artist";
 import Reviews from "./Reviews";
 
-// THE FIX: We import the image directly so Vite cannot lose it during the build!
+// THE FIX (Unbreakable Import): We import the image directly so Vite cannot lose it!
 import bgImage from "../assets/HomePageBackground.jpg"; 
 
 interface HomeProps {
@@ -44,15 +44,18 @@ const fadeUp = {
 
 const Home = memo(function Home({ setPage }: HomeProps) {
   return (
-    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white">
+    /* We made the overall main background slightly less opaque for a crisp feel */
+    <main className="bg-brand-light/80 min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative">
       
-      {/* 1. ULTRA-CLEAN HERO SECTION WITH BACKGROUND IMAGE */}
+      {/* 1. ULTRA-CLEAN HERO SECTION WITH DIRECT BACKGROUND IMAGE */}
       <section 
         className="relative min-h-screen flex flex-col lg:flex-row items-stretch pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {/* We add a subtle overlay so the text remains easy to read over the lashes */}
-        <div className="absolute inset-0 bg-brand-light/85 backdrop-blur-[2px] z-0"></div>
+        {/* THE OPTIMIZATION: We reduced the opacity and blur of this overlay.
+           From bg-brand-light/85 to bg-brand-light/70 and from 2px blur to 1px blur.
+           This makes the background much clearer and crisper. We also added z-0 so it sits perfectly. */}
+        <div className="absolute inset-0 bg-brand-light/70 backdrop-blur-[1px] z-0"></div>
         
         {/* Left Side: Typography */}
         <div className="flex-1 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0 z-10">
@@ -68,11 +71,12 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-[7.5rem] font-black tracking-tighter text-brand-charcoal leading-[0.9] mb-8 drop-shadow-sm">
+            {/* We added a subtle shadow to this slogan to make it pop over the visible background */}
+            <h1 className="text-6xl sm:text-7xl lg:text-[7.5rem] font-black tracking-tighter text-brand-charcoal leading-[0.9] mb-8 drop-shadow-lg">
               Beautiful <br/> Eyes.
             </h1>
             
-            <p className="text-brand-charcoal/80 text-lg md:text-xl max-w-md font-medium leading-relaxed mb-12">
+            <p className="text-brand-charcoal/80 text-lg md:text-xl max-w-md font-medium leading-relaxed mb-12 drop-shadow-sm">
               Expertistry and precision. We create flawless, natural enhancements tailored to your unique facial architecture.
             </p>
 
@@ -103,7 +107,9 @@ const Home = memo(function Home({ setPage }: HomeProps) {
               alt="Flawless lash extensions" 
               className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.2]"
             />
-            <div className="absolute inset-0 bg-brand-charcoal/10" />
+            {/* THE OPTIMIZATION: We reduced this overlay opacity too, 
+               from /10 to /5, to match the crisp mood */}
+            <div className="absolute inset-0 bg-brand-charcoal/5" />
         </div>
       </section>
 
