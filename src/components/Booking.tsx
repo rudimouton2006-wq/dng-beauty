@@ -99,7 +99,7 @@ export default function Booking() {
       try {
         await emailjs.send(
           "service_x1v01xd",                 // Your Service ID
-          "template_6b9vuh7",                // Your Template ID
+          "template_zqu7wcc",                // Corrected Template ID
           {
             to_name: "Gabby",
             client_name: bookingData.customerName,
