@@ -6,32 +6,17 @@
  @import "tailwindcss";
 
  @theme {
-   /* The Upgraded Brand Palette with the new Background Image */
    --color-brand-gold: #6b543c;
    --color-brand-charcoal: #0a0a0a;
    --color-brand-light: #f4f5f6;
-   
-   /* Defining the new home background image */
-   --image-home-bg: url('/src/assets/image_16.png');
  }
  
- /* --- Global Background Implementation --- */
  body {
-   /* Set the simplistic cold white color first as a fallback */
    background-color: var(--color-brand-light);
    color: var(--color-brand-charcoal);
    -webkit-font-smoothing: antialiased;
-   
-   /* Apply the new macro lash image universally */
-   background-image: var(--image-home-bg);
-   background-size: cover;
-   background-position: center;
-   background-repeat: no-repeat;
-   /* Add a very subtle blur to the background image for a deeper, dreamier feel */
-   backdrop-filter: blur(2px);
  }
  
- /* Luxury Container Utility */
  @utility luxury-container {
    max-width: 80rem;
    margin-left: auto;
