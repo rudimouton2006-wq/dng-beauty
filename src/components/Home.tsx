@@ -41,13 +41,17 @@ const fadeUp = {
 
 const Home = memo(function Home({ setPage }: HomeProps) {
   return (
-    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white">
+    /* We keep the 'bg-brand-light' on the main tag as the fallback, 
+       but the Hero section will now be transparent. */
+    <main className="bg-brand-light/95 min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative">
       
       {/* 1. ULTRA-CLEAN HERO SECTION */}
-      <section className="relative min-h-screen flex flex-col lg:flex-row items-stretch pt-20 lg:pt-0">
+      {/* We add 'backdrop-blur-sm' here to enhance the effect from the index.css */}
+      <section className="relative min-h-screen flex flex-col lg:flex-row items-stretch pt-20 lg:pt-0 backdrop-blur-sm">
         
         {/* Left Side: Typography */}
-        <div className="flex-1 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0 z-10">
+        {/* THE FIX: We removed 'bg-white' and made this container transparent to show the universal background image */}
+        <div className="flex-1 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0 z-10 bg-transparent">
           <motion.div
              initial="hidden"
              animate="visible"
@@ -85,7 +89,7 @@ const Home = memo(function Home({ setPage }: HomeProps) {
           </motion.div>
         </div>
 
-        {/* Right Side: Single Stunning Image */}
+        {/* Right Side: We keep this side image for a layered effect, which adds amazing depth */}
         <div className="flex-1 relative min-h-[50vh] lg:min-h-screen">
             <motion.img 
               initial={{ opacity: 0, scale: 1.05 }}
@@ -95,11 +99,15 @@ const Home = memo(function Home({ setPage }: HomeProps) {
               alt="Flawless lash extensions" 
               className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.2]"
             />
+            {/* Subtly darkened overlay on this side image to match the luxury mood */}
+            <div className="absolute inset-0 bg-brand-charcoal/10" />
         </div>
       </section>
 
       {/* 2. THE ESSENTIALS (CLEAN GRID) */}
-      <section className="py-32 px-6 lg:px-20 bg-white">
+      {/* We keep this section 'bg-white' so it provides a solid contrast block, 
+         making the site feel dynamic and professional. */}
+      <section className="py-32 px-6 lg:px-20 bg-white relative z-10">
         <div className="max-w-7xl mx-auto">
             
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
@@ -153,14 +161,13 @@ const Home = memo(function Home({ setPage }: HomeProps) {
       </section>
 
       {/* 3. SEAMLESS COMPONENT INTEGRATION */}
+      {/* These will still have their white/structured backgrounds as built, which provides clean contrast blocks against the universal background. */}
       <Artist />
       <Reviews />
 
       {/* 4. MINIMALIST FOOTER CTA */}
       <section className="py-40 bg-brand-charcoal text-center px-4 relative overflow-hidden">
-        {/* Subtle background accent */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full bg-brand-gold/5 blur-3xl rounded-full"></div>
-        
         <div className="relative z-10">
             <h2 className="text-white text-4xl md:text-6xl font-black tracking-tighter mb-10">
                 Ready for your <br/> transformation?
