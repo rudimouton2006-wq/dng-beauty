@@ -8,8 +8,6 @@ import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import Artist from "./Artist";
 import Reviews from "./Reviews";
-
-// THE FIX (Unbreakable Import): We import the image directly so Vite cannot lose it!
 import bgImage from "../assets/HomePageBackground.jpg"; 
 
 interface HomeProps {
@@ -44,21 +42,20 @@ const fadeUp = {
 
 const Home = memo(function Home({ setPage }: HomeProps) {
   return (
-    /* We made the overall main background slightly less opaque for a crisp feel */
-    <main className="bg-brand-light/80 min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative">
+    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative">
       
-      {/* 1. ULTRA-CLEAN HERO SECTION WITH DIRECT BACKGROUND IMAGE */}
+      {/* 1. ULTRA-CLEAN HERO SECTION WITH MAXIMUM VISIBILITY */}
       <section 
-        className="relative min-h-screen flex flex-col lg:flex-row items-stretch pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat"
+        className="relative min-h-screen flex items-center pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {/* THE OPTIMIZATION: We reduced the opacity and blur of this overlay.
-           From bg-brand-light/85 to bg-brand-light/70 and from 2px blur to 1px blur.
-           This makes the background much clearer and crisper. We also added z-0 so it sits perfectly. */}
-        <div className="absolute inset-0 bg-brand-light/70 backdrop-blur-[1px] z-0"></div>
+        {/* THE FIX: A gradient overlay. 
+            On mobile, it's a soft white wash for readability.
+            On desktop, it fades from white on the left to COMPLETELY transparent on the right! */}
+        <div className="absolute inset-0 bg-brand-light/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-brand-light/95 lg:via-brand-light/60 lg:to-transparent z-0"></div>
         
-        {/* Left Side: Typography */}
-        <div className="flex-1 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0 z-10">
+        {/* Left Side: Typography (Now takes up half the screen, leaving the right side empty for the image) */}
+        <div className="relative z-10 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
           <motion.div
              initial="hidden"
              animate="visible"
@@ -66,17 +63,16 @@ const Home = memo(function Home({ setPage }: HomeProps) {
           >
             <div className="flex items-center gap-4 mb-8">
                 <div className="w-8 h-[1px] bg-brand-gold"></div>
-                <span className="text-brand-gold font-bold tracking-[0.2em] uppercase text-xs">
+                <span className="text-brand-gold font-bold tracking-[0.2em] uppercase text-xs drop-shadow-sm">
                     Cape Town's Premier Studio
                 </span>
             </div>
 
-            {/* We added a subtle shadow to this slogan to make it pop over the visible background */}
             <h1 className="text-6xl sm:text-7xl lg:text-[7.5rem] font-black tracking-tighter text-brand-charcoal leading-[0.9] mb-8 drop-shadow-lg">
               Beautiful <br/> Eyes.
             </h1>
             
-            <p className="text-brand-charcoal/80 text-lg md:text-xl max-w-md font-medium leading-relaxed mb-12 drop-shadow-sm">
+            <p className="text-brand-charcoal/90 text-lg md:text-xl max-w-md font-medium leading-relaxed mb-12 drop-shadow-md">
               Expertistry and precision. We create flawless, natural enhancements tailored to your unique facial architecture.
             </p>
 
@@ -89,32 +85,19 @@ const Home = memo(function Home({ setPage }: HomeProps) {
               </button>
               <button 
                 onClick={() => setPage("services")}
-                className="px-10 py-4 bg-transparent text-brand-charcoal font-bold tracking-widest uppercase text-xs flex items-center gap-3 hover:opacity-60 transition-opacity duration-300"
+                className="px-10 py-4 bg-white/50 backdrop-blur-sm text-brand-charcoal font-bold tracking-widest uppercase text-xs flex items-center gap-3 hover:bg-white transition-colors duration-300 shadow-sm"
               >
                 View Menu <ArrowRight size={14} />
               </button>
             </div>
           </motion.div>
         </div>
-
-        {/* Right Side: Secondary layered image for depth */}
-        <div className="flex-1 relative min-h-[50vh] lg:min-h-screen z-10">
-            <motion.img 
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              src="https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=1200" 
-              alt="Flawless lash extensions" 
-              className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.2]"
-            />
-            {/* THE OPTIMIZATION: We reduced this overlay opacity too, 
-               from /10 to /5, to match the crisp mood */}
-            <div className="absolute inset-0 bg-brand-charcoal/5" />
-        </div>
+        
+        {/* THE FIX: The broken right side image has been completely deleted! */}
       </section>
 
       {/* 2. THE ESSENTIALS (CLEAN GRID) */}
-      <section className="py-32 px-6 lg:px-20 bg-white relative z-10">
+      <section className="py-32 px-6 lg:px-20 bg-white relative z-10 shadow-2xl">
         <div className="max-w-7xl mx-auto">
             
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
