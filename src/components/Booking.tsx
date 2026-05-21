@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState } from "react";
-import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Building2 } from "lucide-react";
 import { db, handleFirestoreError } from "../lib/firebase";
 import type { OperationType } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -44,6 +44,8 @@ export default function Booking() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
+  // NEW: State to track which payment method the client selects in Step 4
+  const [paymentMethod, setPaymentMethod] = useState<'eft' | 'gateway'>('gateway');
 
   const fadeUp = {
     hidden: { opacity: 0, y: 20 },
@@ -98,8 +100,8 @@ export default function Booking() {
 
       try {
         await emailjs.send(
-          "service_x1v01xd",                 // Your Service ID
-          "template_zqu7wcc",                // Corrected Template ID
+          "service_x1v01xd",                 
+          "template_zqu7wcc",                
           {
             to_name: "Gabby",
             client_name: bookingData.customerName,
@@ -110,7 +112,7 @@ export default function Booking() {
             time: bookingData.time,
             deposit: `R${depositAmount}`
           },
-          "GtUm7K5L3axEdq-Zt"                // Your Public Key
+          "GtUm7K5L3axEdq-Zt"                
         );
       } catch (emailError) {
         console.warn("Email alert failed.", emailError);
@@ -412,7 +414,7 @@ export default function Booking() {
               </motion.div>
             )}
 
-            {/* STEP 4: Success Confirmation */}
+            {/* STEP 4: Success & Dual Payment Options */}
             {step === 4 && (
               <motion.div 
                 key="step4" 
@@ -420,65 +422,119 @@ export default function Booking() {
                 animate={{ opacity: 1, scale: 1 }} 
                 className="text-center py-10"
               >
-                <div className="w-32 h-32 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
+                <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-green-100">
                    <motion.div
                      initial={{ scale: 0 }}
                      animate={{ scale: 1 }}
                      transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
                    >
-                     <Check className="text-brand-gold" size={60} strokeWidth={3} />
+                     <Check className="text-green-600" size={40} strokeWidth={3} />
                    </motion.div>
                 </div>
-                <h2 className="text-5xl font-black mb-4 text-brand-charcoal">Booking Logged!</h2>
-                <p className="text-brand-charcoal/60 font-medium mb-12">Your details have been securely saved to our system.</p>
-                
-                {/* Luxury Digital Ticket */}
-                <div className="bg-white border border-brand-gold/20 p-8 md:p-10 rounded-3xl mb-12 shadow-2xl text-left relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-5 bg-brand-gold/10 rounded-bl-3xl shadow-sm">
-                    <Check size={28} className="text-brand-gold" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold block mb-8">Official Confirmation</span>
-                  
-                  <div className="grid gap-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50 p-5 rounded-2xl border border-black/5">
-                      <span className="text-brand-charcoal text-xs font-black uppercase tracking-widest mb-2 sm:mb-0">Service Reserved</span>
-                      <span className="text-xl font-black text-brand-charcoal text-right">{bookingData.serviceName}</span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col bg-gray-50 p-5 rounded-2xl border border-black/5">
-                        <span className="text-brand-charcoal/50 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2"><Calendar size={12}/> Date</span>
-                        <span className="font-black text-brand-charcoal text-lg">{bookingData.date}</span>
-                      </div>
-                      <div className="flex flex-col bg-gray-50 p-5 rounded-2xl border border-black/5">
-                        <span className="text-brand-charcoal/50 text-[10px] font-black uppercase tracking-widest mb-2">Time</span>
-                        <span className="font-black text-brand-charcoal text-lg">{bookingData.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <h2 className="text-4xl md:text-5xl font-black mb-4 text-brand-charcoal">Spot Reserved!</h2>
+                <p className="text-brand-charcoal/60 font-medium mb-12 max-w-md mx-auto">
+                  Your details are in our system. To lock in your placement on the calendar, the <strong className="text-brand-gold">R{depositAmount}</strong> deposit is required.
+                </p>
 
-                <div className="bg-brand-gold/10 p-8 rounded-2xl mb-12 border border-brand-gold/20 text-left">
-                  <p className="text-brand-charcoal font-black text-sm mb-3 flex items-center gap-2">✨ Action Required: Deposit Payment</p>
-                  <p className="text-brand-charcoal/80 font-medium text-sm leading-relaxed mb-4">
-                    To finalize your placement on the calendar, a non-refundable deposit of <strong className="text-brand-gold">R{depositAmount}</strong> is required. Please tap the WhatsApp button below to request payment details.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-4">
+                {/* Payment Method Toggle */}
+                <div className="flex bg-gray-100 p-1.5 rounded-xl mb-8 relative">
                   <button 
-                    onClick={openWhatsApp} 
-                    className="flex items-center justify-center gap-4 bg-[#25D366] text-white px-10 py-6 text-sm tracking-widest uppercase font-black transition-all hover:opacity-90 shadow-xl rounded-xl"
+                    onClick={() => setPaymentMethod('gateway')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-all duration-300 ${paymentMethod === 'gateway' ? 'bg-white shadow-md text-brand-charcoal' : 'text-brand-charcoal/50 hover:text-brand-charcoal'}`}
                   >
-                    <MessageSquare size={20} /> Request Payment Details
+                    <CreditCard size={16} /> Pay Online
                   </button>
                   <button 
-                    onClick={addToCalendar} 
-                    className="secondary-btn w-full flex items-center justify-center gap-4 py-6 text-sm border-brand-charcoal/20 hover:border-brand-gold"
+                    onClick={() => setPaymentMethod('eft')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-all duration-300 ${paymentMethod === 'eft' ? 'bg-white shadow-md text-brand-charcoal' : 'text-brand-charcoal/50 hover:text-brand-charcoal'}`}
                   >
-                    <Calendar size={18} /> Add to Personal Calendar
+                    <Building2 size={16} /> Manual EFT
                   </button>
                 </div>
+
+                <AnimatePresence mode="wait">
+                  {/* OPTION A: Secure Gateway Flow */}
+                  {paymentMethod === 'gateway' && (
+                    <motion.div 
+                      key="gateway"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      className="bg-white border-2 border-brand-gold/30 p-8 rounded-3xl mb-8 shadow-lg text-left"
+                    >
+                      <h3 className="text-xl font-black text-brand-charcoal mb-4 flex items-center gap-3">
+                        <CreditCard className="text-brand-gold" /> Instant Confirmation
+                      </h3>
+                      <p className="text-sm font-medium text-brand-charcoal/70 mb-8 leading-relaxed">
+                        Pay securely using your credit, debit card, or instant EFT via our encrypted payment gateway. Your spot will be confirmed immediately.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          // Replace this URL with Gabby's actual Yoco or PayFast payment link
+                          window.open("https://pay.yoco.com/dng-beauty", "_blank");
+                        }}
+                        className="w-full py-5 bg-brand-charcoal text-white font-black tracking-widest uppercase text-xs hover:bg-brand-gold transition-colors rounded-xl shadow-lg flex items-center justify-center gap-3"
+                      >
+                        Pay R{depositAmount} Securely <ArrowRight size={16} />
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* OPTION B: Manual EFT Flow */}
+                  {paymentMethod === 'eft' && (
+                    <motion.div 
+                      key="eft"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      className="bg-white border border-black/10 p-8 rounded-3xl mb-8 shadow-lg text-left"
+                    >
+                      <h3 className="text-xl font-black text-brand-charcoal mb-4 flex items-center gap-3">
+                        <Building2 className="text-brand-charcoal" /> Banking Details
+                      </h3>
+                      <p className="text-sm font-medium text-brand-charcoal/70 mb-6 leading-relaxed">
+                        Transfer the deposit using the details below. <strong className="text-brand-charcoal">Use your name as the reference.</strong>
+                      </p>
+                      
+                      <div className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-black/5 mb-6">
+                        <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Bank</span>
+                          <span className="font-black text-brand-charcoal">Capitec Bank</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Account</span>
+                          <span className="font-black text-brand-charcoal">DnG Beauty</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-1">
+                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Acc No.</span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-black text-brand-charcoal text-lg tracking-wider">1234567890</span>
+                            <button 
+                              onClick={() => { navigator.clipboard.writeText("1234567890"); alert("Copied!"); }}
+                              className="text-[10px] font-black uppercase tracking-widest bg-brand-charcoal/10 text-brand-charcoal px-3 py-1 rounded-full hover:bg-brand-charcoal hover:text-white transition-colors"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          const msg = `Hi Gabby! I have just booked ${bookingData.serviceName} for ${bookingData.date} at ${bookingData.time}. Here is my Proof of Payment for the R${depositAmount} deposit!`;
+                          window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
+                        }} 
+                        className="w-full py-5 bg-[#25D366] text-white font-black tracking-widest uppercase text-xs hover:opacity-90 transition-opacity rounded-xl shadow-lg flex items-center justify-center gap-3"
+                      >
+                        <MessageSquare size={16} /> Send POP on WhatsApp
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Add to Calendar Button (Always visible) */}
+                <button 
+                  onClick={addToCalendar} 
+                  className="w-full py-5 bg-transparent border border-black/10 text-brand-charcoal font-black tracking-widest uppercase text-xs hover:bg-gray-50 transition-colors rounded-xl flex items-center justify-center gap-3"
+                >
+                  <Calendar size={16} /> Add to Personal Calendar
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
