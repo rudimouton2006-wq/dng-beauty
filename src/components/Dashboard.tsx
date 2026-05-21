@@ -17,6 +17,7 @@ interface DashboardProps {
   setPage: (page: string) => void;
 }
 
+// PART 3: Expanded Interface to handle the new smart timestamps and deposits
 interface BookingData {
   id: string;
   customerName?: string;
@@ -27,6 +28,8 @@ interface BookingData {
   time?: string;
   totalPrice?: number;
   status?: 'pending' | 'confirmed' | 'completed';
+  appointment_timestamp?: string; 
+  deposit_required?: number;
 }
 
 export default function Dashboard({ setPage }: DashboardProps) {
@@ -56,13 +59,12 @@ export default function Dashboard({ setPage }: DashboardProps) {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data() as BookingData;
-        const status = data.status || 'pending'; // Default to pending if not set
+        const status = data.status || 'pending'; 
         
         fetchedBookings.push({ id: doc.id, ...data, status });
         
         if (status === 'pending') pending++;
 
-        // Only count revenue for completed or confirmed appointments this month
         if (data.date && data.totalPrice && (status === 'completed' || status === 'confirmed')) {
           const bookingDate = new Date(data.date);
           if (bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear) {
@@ -86,13 +88,12 @@ export default function Dashboard({ setPage }: DashboardProps) {
     fetchDashboardData();
   }, [setPage]);
 
-  // --- Database Action Handlers ---
   const handleUpdateStatus = async (id: string, newStatus: 'confirmed' | 'completed') => {
     setProcessingId(id);
     try {
       const bookingRef = doc(db, "bookings", id);
       await updateDoc(bookingRef, { status: newStatus });
-      await fetchDashboardData(); // Refresh the data to recalculate revenue and badges
+      await fetchDashboardData(); 
     } catch (error) {
       console.error("Error updating status:", error);
     } finally {
@@ -100,14 +101,33 @@ export default function Dashboard({ setPage }: DashboardProps) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this booking?")) return;
+  // PART 3: The 1-Hour Cancellation Detector Algorithm
+  const handleDelete = async (booking: BookingData) => {
+    if (booking.appointment_timestamp) {
+      const aptTime = new Date(booking.appointment_timestamp).getTime();
+      const now = new Date().getTime();
+      const hoursUntilAppointment = (aptTime - now) / (1000 * 60 * 60);
+
+      // If the appointment is in the future, but LESS than 1 hour away
+      if (hoursUntilAppointment > 0 && hoursUntilAppointment <= 1) {
+        const confirmFee = window.confirm(
+          "⚠️ CANCELLATION PENALTY DETECTED ⚠️\n\nThis cancellation is within 1 hour of the scheduled time. The client forfeits their deposit and is liable for the cancellation fee.\n\nDo you want to proceed and flag this client?"
+        );
+        if (!confirmFee) return; 
+      } else {
+        const confirmDelete = window.confirm("Are you sure you want to delete this booking?");
+        if (!confirmDelete) return;
+      }
+    } else {
+      // Fallback for older bookings before we added timestamps
+      if (!window.confirm("Are you sure you want to delete this booking?")) return;
+    }
     
-    setProcessingId(id);
+    setProcessingId(booking.id);
     try {
-      const bookingRef = doc(db, "bookings", id);
+      const bookingRef = doc(db, "bookings", booking.id);
       await deleteDoc(bookingRef);
-      await fetchDashboardData(); // Refresh the table
+      await fetchDashboardData(); 
     } catch (error) {
       console.error("Error deleting booking:", error);
     } finally {
@@ -129,7 +149,6 @@ export default function Dashboard({ setPage }: DashboardProps) {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
   };
 
-  // --- UI Helpers ---
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'confirmed':
@@ -249,6 +268,7 @@ export default function Dashboard({ setPage }: DashboardProps) {
                           <span className="font-bold text-brand-charcoal">{booking.serviceName || "Not specified"}</span>
                           <span className="text-brand-gold font-black mt-1">
                             {booking.totalPrice ? `R${booking.totalPrice}` : "—"}
+                            {booking.deposit_required && <span className="text-brand-charcoal/40 text-xs font-normal ml-2">(Deposit: R{booking.deposit_required})</span>}
                           </span>
                         </div>
                       </td>
@@ -285,7 +305,7 @@ export default function Dashboard({ setPage }: DashboardProps) {
                           )}
 
                           <button 
-                            onClick={() => handleDelete(booking.id)}
+                            onClick={() => handleDelete(booking)}
                             disabled={processingId === booking.id}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             title="Delete Booking"
