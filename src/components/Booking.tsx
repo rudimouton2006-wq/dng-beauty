@@ -5,10 +5,11 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState } from "react";
-import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2 } from "lucide-react";
+import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { db, handleFirestoreError } from "../lib/firebase";
 import type { OperationType } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import emailjs from "@emailjs/browser";
 
 interface Service {
   id: string;
@@ -17,6 +18,7 @@ interface Service {
   category: string;
   img: string;
   duration: string;
+  isMasterclass?: boolean;
 }
 
 const SERVICES: Service[] = [
@@ -25,6 +27,7 @@ const SERVICES: Service[] = [
   { id: "v-full", name: "Volume Full Set", price: "R450", category: "Extensions", img: "https://images.unsplash.com/photo-1600431521340-491eca880813?auto=format&fit=crop&q=80&w=400", duration: "120 min" },
   { id: "b-lam", name: "Brow Lamination", price: "R300", category: "Brows", img: "https://images.unsplash.com/photo-1563172771-1ebe3f9e3466?auto=format&fit=crop&q=80&w=400", duration: "45 min" },
   { id: "l-lift", name: "Lash Lift & Tint", price: "R350", category: "Lifts", img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=400", duration: "60 min" },
+  { id: "m-class", name: "2-Day Lash Masterclass", price: "R3000", category: "Training", img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=400", duration: "2 Days", isMasterclass: true }
 ];
 
 export default function Booking() {
@@ -48,12 +51,19 @@ export default function Booking() {
     exit: { opacity: 0, y: -20, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
   };
 
+  const selectedServiceObj = SERVICES.find(s => s.id === bookingData.serviceId);
+  const isMasterclass = selectedServiceObj?.isMasterclass || false;
+  
+  const standardDeposit = 200;
+  const depositAmount = isMasterclass ? standardDeposit * 1.5 : standardDeposit;
+
   const handleServiceSelect = (service: Service) => {
     setBookingData({ 
       ...bookingData, 
       serviceId: service.id, 
       serviceName: service.name,
-      totalPrice: parseInt(service.price.replace("R", ""))
+      totalPrice: parseInt(service.price.replace("R", "")),
+      time: service.isMasterclass ? "09:00" : ""
     });
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -67,14 +77,45 @@ export default function Booking() {
     }
     setIsSubmitting(true);
     setSubmissionError("");
+    
     try {
-      const bookingsRef = collection(db, "bookings");
-      await addDoc(bookingsRef, { 
+      const appointmentDateTime = new Date(`${bookingData.date}T${bookingData.time}`);
+      const cancelDeadline = new Date(appointmentDateTime.getTime() - (60 * 60 * 1000));
+
+      const finalBookingData = {
         ...bookingData, 
-        status: "pending", 
+        booking_status: "pending", 
+        deposit_required: depositAmount,
+        cancellation_eligibility: "eligible",
+        appointment_timestamp: appointmentDateTime.toISOString(),
+        cancellation_deadline: cancelDeadline.toISOString(),
         createdAt: serverTimestamp(),
         source: "website_booking_system"
-      });
+      };
+
+      const bookingsRef = collection(db, "bookings");
+      await addDoc(bookingsRef, finalBookingData);
+
+      try {
+        await emailjs.send(
+          "service_x1v01xd",                 // Your Service ID
+          "template_6b9vuh7",                // Your Template ID
+          {
+            to_name: "Gabby",
+            client_name: bookingData.customerName,
+            client_email: bookingData.customerEmail,
+            client_phone: bookingData.customerPhone,
+            service: bookingData.serviceName,
+            date: bookingData.date,
+            time: bookingData.time,
+            deposit: `R${depositAmount}`
+          },
+          "GtUm7K5L3axEdq-Zt"                // Your Public Key
+        );
+      } catch (emailError) {
+        console.warn("Email alert failed.", emailError);
+      }
+
       setStep(4);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
@@ -236,12 +277,15 @@ export default function Booking() {
                   <span className="text-brand-gold font-black text-xl">02 / 03</span>
                 </div>
                 
-                <div className="bg-white p-6 rounded-2xl border border-black/5 flex justify-between items-center shadow-sm">
+                <div className="bg-white p-6 rounded-2xl border border-black/5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm gap-4">
                    <div>
                       <span className="text-[10px] tracking-widest uppercase font-black text-brand-gold block mb-1">Selected</span>
                       <h4 className="text-xl font-black">{bookingData.serviceName}</h4>
                    </div>
-                   <span className="text-2xl font-black">R{bookingData.totalPrice}</span>
+                   <div className="text-right">
+                      <span className="text-[10px] tracking-widest uppercase font-black text-brand-charcoal/50 block mb-1">Required Deposit</span>
+                      <span className="text-2xl font-black text-brand-gold">R{depositAmount}</span>
+                   </div>
                 </div>
 
                 <div className="space-y-10">
@@ -257,12 +301,23 @@ export default function Booking() {
                   </div>
                   <div>
                     <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-4">Choose Time Slot</label>
+                    
+                    {isMasterclass && (
+                      <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                        <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={16} />
+                        <p className="text-xs font-bold text-amber-800 uppercase tracking-widest leading-relaxed">
+                          The 2-Day Masterclass requires a full day commitment. Time selection is locked to a 09:00 AM start.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       {timeSlots.map(t => (
                         <button 
                           key={t}
+                          disabled={isMasterclass && t !== "09:00"}
                           onClick={() => setBookingData({...bookingData, time: t})}
-                          className={`py-5 text-sm font-black tracking-widest uppercase border-2 rounded-xl transition-all duration-300 ${
+                          className={`py-5 text-sm font-black tracking-widest uppercase border-2 rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-gray-100 ${
                             bookingData.time === t 
                               ? 'bg-brand-charcoal text-white border-brand-charcoal shadow-lg scale-105' 
                               : 'bg-white border-black/5 text-brand-charcoal hover:border-brand-gold/30 hover:shadow-md'
@@ -333,11 +388,12 @@ export default function Booking() {
                     <div className="flex justify-between items-start relative z-10">
                       <div>
                         <p className="text-2xl font-black text-brand-charcoal leading-none mb-3">{bookingData.serviceName}</p>
-                        <p className="text-sm font-black text-brand-charcoal uppercase tracking-widest flex items-center gap-2">
+                        <p className="text-sm font-black text-brand-charcoal uppercase tracking-widest flex items-center gap-2 mb-4">
                           <Calendar size={14} className="text-brand-gold"/> {bookingData.date} @ {bookingData.time}
                         </p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-charcoal/50">Deposit to Secure</p>
                       </div>
-                      <div className="text-4xl font-black text-brand-gold">R{bookingData.totalPrice}</div>
+                      <div className="text-4xl font-black text-brand-gold">R{depositAmount}</div>
                     </div>
                   </div>
 
@@ -403,9 +459,9 @@ export default function Booking() {
                 </div>
 
                 <div className="bg-brand-gold/10 p-8 rounded-2xl mb-12 border border-brand-gold/20 text-left">
-                  <p className="text-brand-charcoal font-black text-sm mb-3 flex items-center gap-2">✨ One Final Action Required</p>
-                  <p className="text-brand-charcoal/80 font-medium text-sm leading-relaxed">
-                    To notify our studio immediately and finalize your placement on the calendar, please tap the WhatsApp button below to send an automated message.
+                  <p className="text-brand-charcoal font-black text-sm mb-3 flex items-center gap-2">✨ Action Required: Deposit Payment</p>
+                  <p className="text-brand-charcoal/80 font-medium text-sm leading-relaxed mb-4">
+                    To finalize your placement on the calendar, a non-refundable deposit of <strong className="text-brand-gold">R{depositAmount}</strong> is required. Please tap the WhatsApp button below to request payment details.
                   </p>
                 </div>
 
@@ -414,7 +470,7 @@ export default function Booking() {
                     onClick={openWhatsApp} 
                     className="flex items-center justify-center gap-4 bg-[#25D366] text-white px-10 py-6 text-sm tracking-widest uppercase font-black transition-all hover:opacity-90 shadow-xl rounded-xl"
                   >
-                    <MessageSquare size={20} /> Notify Studio on WhatsApp
+                    <MessageSquare size={20} /> Request Payment Details
                   </button>
                   <button 
                     onClick={addToCalendar} 
@@ -442,7 +498,7 @@ export default function Booking() {
               <div className="space-y-6 text-brand-charcoal/80 font-medium leading-relaxed">
                  <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Please arrive with clean eyes and entirely free of makeup.</p>
                  <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Cancellations must be made 48 hours prior to your scheduled time.</p>
-                 <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Punctuality ensures you receive your full allocated service duration.</p>
+                 <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Cancellations made within 1 hour of the appointment forfeit the deposit.</p>
               </div>
            </div>
            <div>
