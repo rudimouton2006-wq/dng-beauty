@@ -3,99 +3,93 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import Navbar from "./components/Navbar.tsx";
-import Footer from "./components/Footer.tsx";
-import Home from "./components/Home.tsx";
-import Services from "./components/Services.tsx";
-import Training from "./components/Training.tsx";
-import Booking from "./components/Booking.tsx";
-import Gallery from "./components/Gallery.tsx";
-import PrivacyPolicy from "./components/PrivacyPolicy.tsx";
-import Login from "./components/Login.tsx";
-import Dashboard from "./components/Dashboard.tsx";
+import { useState, useEffect, Suspense, lazy } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Loader2 } from 'lucide-react';
+import Navbar from './components/Navbar';
 
-export default function App() {
-  const [currentPage, setPage] = useState("home");
+// LAZY LOADING: This is a massive performance boost. 
+// It tells the browser NOT to download a page until the user actually clicks on it.
+const Home = lazy(() => import('./components/Home'));
+const Services = lazy(() => import('./components/Services'));
+const Training = lazy(() => import('./components/Training'));
+const Gallery = lazy(() => import('./components/Gallery'));
+const Booking = lazy(() => import('./components/Booking'));
+const Login = lazy(() => import('./components/Login'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
-  // Scroll to top on page change to ensure pristine viewing state
+// GPU-Accelerated Page Transition Animation
+const pageTransition = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.3, ease: "easeIn" } }
+};
+
+// A beautiful, branded loading screen while pages download in the background
+const PageLoader = () => (
+  <div className="min-h-screen bg-brand-light flex flex-col items-center justify-center">
+    <Loader2 className="animate-spin text-brand-gold mb-4" size={40} />
+    <span className="text-brand-charcoal/50 font-black tracking-[0.2em] uppercase text-xs">
+      Loading Experience
+    </span>
+  </div>
+);
+
+function App() {
+  // Global State: Tracks which page the user is currently viewing
+  const [currentPage, setCurrentPage] = useState('home');
+
+  // Scroll to top automatically whenever the page changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
+  // The Routing Engine
   const renderPage = () => {
     switch (currentPage) {
-      case "home":
-        return <Home setPage={setPage} />;
-      case "services":
-        return <Services />;
-      case "training":
-        return <Training />;
-      case "booking":
-        return <Booking />;
-      case "gallery":
-        return <Gallery setPage={setPage} />;
-      case "privacy":
-        return <PrivacyPolicy />;
-      case "login":
-        return <Login setPage={setPage} />;
-      case "dashboard":
-        return <Dashboard setPage={setPage} />;
-      default:
-        return <Home setPage={setPage} />;
+      case 'home': return <Home setPage={setCurrentPage} />;
+      case 'services': return <Services setPage={setCurrentPage} />;
+      case 'training': return <Training setPage={setCurrentPage} />;
+      case 'gallery': return <Gallery setPage={setCurrentPage} />;
+      case 'booking': return <Booking />;
+      case 'login': return <Login setPage={setCurrentPage} />;
+      case 'dashboard': return <Dashboard setPage={setCurrentPage} />;
+      default: return <Home setPage={setCurrentPage} />;
     }
   };
 
   return (
-    <div className="min-h-screen selection:bg-brand-gold selection:text-white flex flex-col bg-white overflow-x-hidden relative font-sans text-brand-charcoal">
-      <Navbar currentPage={currentPage} setPage={setPage} />
+    // The main wrapper uses the new soft cream background automatically
+    <div className="min-h-screen bg-white text-brand-charcoal selection:bg-brand-gold selection:text-white font-sans overflow-x-hidden">
       
-      <main className="flex-grow relative z-10 w-full" id="main-content" role="main">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentPage}
-            initial={{ opacity: 0, y: 15, filter: "blur(4px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -15, filter: "blur(4px)" }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full h-full"
-          >
-            {renderPage()}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+      {/* BUG FIX: The Navbar is strictly hidden when on the Login or Dashboard pages */}
+      {currentPage !== 'login' && currentPage !== 'dashboard' && (
+        <Navbar setPage={setCurrentPage} />
+      )}
 
-      <Footer setPage={setPage} />
-      
-      {/* Absolute Masterpiece Background Elements - Hardware Accelerated */}
-      <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden" aria-hidden="true">
-        {/* Subtle Parallax Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#D4AF3705_1px,transparent_1px),linear-gradient(to_bottom,#D4AF3705_1px,transparent_1px)] bg-[size:100px_100px]" />
-        
-        {/* Atmospheric Floating Orbs */}
-        <motion.div 
-          animate={{ 
-            x: [0, 60, 0],
-            y: [0, 40, 0],
-            scale: [1, 1.05, 1]
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          style={{ willChange: "transform" }}
-          className="absolute top-[-10%] -right-20 w-[600px] h-[600px] bg-brand-gold/5 rounded-full blur-[140px] opacity-40 mix-blend-multiply" 
-        />
-        
-        <motion.div 
-          animate={{ 
-            x: [0, -50, 0],
-            y: [0, 70, 0],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          style={{ willChange: "transform" }}
-          className="absolute bottom-[-10%] -left-20 w-[700px] h-[700px] bg-gray-200/50 rounded-full blur-[160px] opacity-50 mix-blend-multiply" 
-        />
-      </div>
+      {/* AnimatePresence handles the smooth fading between pages.
+        mode="wait" ensures the current page exits completely before the next one enters.
+      */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentPage}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={pageTransition}
+          // Forces hardware acceleration for page swaps
+          style={{ willChange: "opacity, transform" }}
+          className="min-h-screen"
+        >
+          {/* Suspense catches the lazy-loaded components and shows the PageLoader while they fetch */}
+          <Suspense fallback={<PageLoader />}>
+            {renderPage()}
+          </Suspense>
+        </motion.div>
+      </AnimatePresence>
+
     </div>
   );
 }
+
+export default App;
