@@ -4,11 +4,11 @@
  */
 
 import { motion, AnimatePresence } from "motion/react";
-import React, { useState } from "react";
-import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Building2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Building2, Clock } from "lucide-react";
 import { db, handleFirestoreError } from "../lib/firebase";
 import type { OperationType } from "../lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import emailjs from "@emailjs/browser";
 
 interface Service {
@@ -42,9 +42,13 @@ export default function Booking() {
     customerPhone: "",
     totalPrice: 0,
   });
+  
+  // Anti-Overlap State (Batch 1)
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [isCheckingSlots, setIsCheckingSlots] = useState(false);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
-  // NEW: State to track which payment method the client selects in Step 4
   const [paymentMethod, setPaymentMethod] = useState<'eft' | 'gateway'>('gateway');
 
   const fadeUp = {
@@ -59,6 +63,53 @@ export default function Booking() {
   const standardDeposit = 200;
   const depositAmount = isMasterclass ? standardDeposit * 1.5 : standardDeposit;
 
+  const today = new Date().toISOString().split('T')[0];
+  const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
+
+  // --- BATCH 1: Anti-Overlap Real-Time Query ---
+  useEffect(() => {
+    if (!bookingData.date) {
+      setBookedSlots([]);
+      return;
+    }
+
+    let isMounted = true;
+    
+    const fetchTakenSlots = async () => {
+      setIsCheckingSlots(true);
+      try {
+        const bookingsRef = collection(db, "bookings");
+        const q = query(bookingsRef, where("date", "==", bookingData.date));
+        const snapshot = await getDocs(q);
+        
+        const taken: string[] = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          // Assume "cancelled" statuses free up the slot; all others lock it
+          if (data.booking_status !== "cancelled" && data.status !== "cancelled") {
+            taken.push(data.time);
+          }
+        });
+        
+        if (isMounted) {
+          setBookedSlots(taken);
+          // Auto-clear selected time if the user had it selected but it is actually taken
+          if (taken.includes(bookingData.time)) {
+            setBookingData(prev => ({ ...prev, time: "" }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+      } finally {
+        if (isMounted) setIsCheckingSlots(false);
+      }
+    };
+
+    fetchTakenSlots();
+
+    return () => { isMounted = false; };
+  }, [bookingData.date, bookingData.time]);
+
   const handleServiceSelect = (service: Service) => {
     setBookingData({ 
       ...bookingData, 
@@ -71,12 +122,30 @@ export default function Booking() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+// --- BATCH 2: Form Validation Logic ---
+  const validateForm = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Strips spaces/dashes and checks for standard 10-digit or +27 formats
+    const phoneClean = bookingData.customerPhone.replace(/[\s-]/g, '');
+    const phoneRegex = /^(\+27|0)[1-8][0-9]{8}$|^\+?[0-9]{10,14}$/;
+
+    if (!bookingData.customerName.trim()) return "Please enter your full name.";
+    if (!bookingData.customerEmail.trim() || !emailRegex.test(bookingData.customerEmail)) return "Please enter a valid email address.";
+    if (!bookingData.customerPhone.trim() || !phoneRegex.test(phoneClean)) return "Please enter a valid phone number (e.g., 082 123 4567).";
+    
+    return "";
+  };
+
   const handleDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookingData.date || !bookingData.time || !bookingData.customerPhone) {
-      setSubmissionError("Please fill in all details to proceed.");
+    
+    // BATCH 2: Run strict validation before hitting Firebase
+    const validationError = validateForm();
+    if (validationError) {
+      setSubmissionError(validationError);
       return;
     }
+
     setIsSubmitting(true);
     setSubmissionError("");
     
@@ -84,9 +153,13 @@ export default function Booking() {
       const appointmentDateTime = new Date(`${bookingData.date}T${bookingData.time}`);
       const cancelDeadline = new Date(appointmentDateTime.getTime() - (60 * 60 * 1000));
 
+      // BATCH 3: Explicitly mark as pending deposit and setup CRM fields
       const finalBookingData = {
         ...bookingData, 
-        booking_status: "pending", 
+        booking_status: "pending_deposit", 
+        status: "pending",           // Matches Batch 1 CRM requirements
+        depositPaid: false,          // Matches Batch 1 CRM requirements
+        paymentMethod: "Pending",    // Matches Batch 1 CRM requirements
         deposit_required: depositAmount,
         cancellation_eligibility: "eligible",
         appointment_timestamp: appointmentDateTime.toISOString(),
@@ -100,7 +173,7 @@ export default function Booking() {
 
       try {
         await emailjs.send(
-          "service_x1v01xd",                 
+          "service_x1v01xd",                
           "template_zqu7wcc",                
           {
             to_name: "Gabby",
@@ -126,14 +199,6 @@ export default function Booking() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const today = new Date().toISOString().split('T')[0];
-  const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
-
-  const openWhatsApp = () => {
-    const msg = `Hi Gabby! I've just booked ${bookingData.serviceName} for ${bookingData.date} at ${bookingData.time}. Looking forward to it!`;
-    window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   const addToCalendar = () => {
@@ -299,10 +364,14 @@ export default function Booking() {
                       min={today}
                       className="w-full p-6 border border-black/10 focus:border-brand-gold outline-none h-16 bg-white font-bold rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-brand-gold/10"
                       onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                      value={bookingData.date}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-4">Choose Time Slot</label>
+                    <div className="flex items-center gap-3 mb-4">
+                      <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal">Choose Time Slot</label>
+                      {isCheckingSlots && <Loader2 size={16} className="animate-spin text-brand-gold" />}
+                    </div>
                     
                     {isMasterclass && (
                       <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
@@ -314,21 +383,35 @@ export default function Booking() {
                     )}
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {timeSlots.map(t => (
-                        <button 
-                          key={t}
-                          disabled={isMasterclass && t !== "09:00"}
-                          onClick={() => setBookingData({...bookingData, time: t})}
-                          className={`py-5 text-sm font-black tracking-widest uppercase border-2 rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-gray-100 ${
-                            bookingData.time === t 
-                              ? 'bg-brand-charcoal text-white border-brand-charcoal shadow-lg scale-105' 
-                              : 'bg-white border-black/5 text-brand-charcoal hover:border-brand-gold/30 hover:shadow-md'
-                          }`}
-                        >
-                          {t}
-                        </button>
-                      ))}
+                      {timeSlots.map(t => {
+                        const isTaken = bookedSlots.includes(t);
+                        const isMasterclassLocked = isMasterclass && t !== "09:00";
+                        const isDisabled = isTaken || isMasterclassLocked;
+
+                        return (
+                          <button 
+                            key={t}
+                            disabled={isDisabled}
+                            onClick={() => setBookingData({...bookingData, time: t})}
+                            className={`py-5 text-sm font-black tracking-widest uppercase border-2 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
+                              isTaken 
+                                ? 'bg-red-50 text-red-300 line-through border-red-100' 
+                                : bookingData.time === t 
+                                  ? 'bg-brand-charcoal text-white border-brand-charcoal shadow-lg scale-105' 
+                                  : 'bg-white border-black/5 text-brand-charcoal hover:border-brand-gold/30 hover:shadow-md disabled:bg-gray-100 disabled:opacity-30'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        )
+                      })}
                     </div>
+                    
+                    {bookedSlots.length > 0 && !isCheckingSlots && (
+                      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-[10px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <AlertCircle size={14} /> Crossed out times are already booked.
+                      </motion.p>
+                    )}
                   </div>
                   <button 
                     disabled={!bookingData.date || !bookingData.time}
@@ -357,27 +440,30 @@ export default function Booking() {
                   </motion.div>
                 )}
 
-                <form onSubmit={handleDetailsSubmit} className="space-y-8">
+<form onSubmit={handleDetailsSubmit} className="space-y-8">
                   <div className="space-y-6">
                     <input 
                       required 
+                      disabled={isSubmitting}
                       placeholder="Your Full Name" 
-                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30" 
+                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
                       value={bookingData.customerName} 
                       onChange={(e) => setBookingData({...bookingData, customerName: e.target.value})} 
                     />
                     <input 
                       required 
+                      disabled={isSubmitting}
                       type="email" 
                       placeholder="Your Email Address" 
-                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30" 
+                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
                       value={bookingData.customerEmail} 
                       onChange={(e) => setBookingData({...bookingData, customerEmail: e.target.value})} 
                     />
                     <input 
                       required 
+                      disabled={isSubmitting}
                       placeholder="WhatsApp / Contact Number" 
-                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30" 
+                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
                       value={bookingData.customerPhone} 
                       onChange={(e) => setBookingData({...bookingData, customerPhone: e.target.value})} 
                     />
@@ -402,10 +488,10 @@ export default function Booking() {
                   <button 
                     disabled={isSubmitting} 
                     type="submit" 
-                    className="minimal-btn w-full shadow-xl py-6 flex items-center justify-center gap-4 disabled:opacity-70 disabled:cursor-wait"
+                    className="w-full shadow-xl py-6 flex items-center justify-center gap-4 disabled:opacity-70 disabled:cursor-wait bg-brand-charcoal text-white rounded-xl hover:bg-brand-gold transition-colors font-black tracking-widest uppercase text-xs"
                   >
                     {isSubmitting ? (
-                      <><Loader2 size={18} className="animate-spin" /> Finalizing Reservation...</>
+                      <><Loader2 size={18} className="animate-spin" /> Confirming Reservation...</>
                     ) : (
                       <><Check size={18} /> Secure My Appointment</>
                     )}
@@ -422,18 +508,25 @@ export default function Booking() {
                 animate={{ opacity: 1, scale: 1 }} 
                 className="text-center py-10"
               >
-                <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-green-100">
+                <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-orange-100">
                    <motion.div
                      initial={{ scale: 0 }}
                      animate={{ scale: 1 }}
                      transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
                    >
-                     <Check className="text-green-600" size={40} strokeWidth={3} />
+                     <AlertCircle className="text-orange-500" size={40} strokeWidth={3} />
                    </motion.div>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-black mb-4 text-brand-charcoal">Spot Reserved!</h2>
-                <p className="text-brand-charcoal/60 font-medium mb-12 max-w-md mx-auto">
-                  Your details are in our system. To lock in your placement on the calendar, the <strong className="text-brand-gold">R{depositAmount}</strong> deposit is required.
+                <h2 className="text-4xl md:text-5xl font-black mb-4 text-brand-charcoal">Action Required</h2>
+                
+                <div className="bg-orange-50/50 border border-orange-200 p-4 rounded-xl mb-8 max-w-md mx-auto">
+                  <p className="text-orange-800 font-bold text-sm">
+                    Your spot is reserved, but <strong className="font-black uppercase tracking-wider underline">not yet secured</strong>.
+                  </p>
+                </div>
+
+                <p className="text-brand-charcoal/70 font-medium mb-12 max-w-md mx-auto leading-relaxed">
+                  We have logged your details. To permanently lock in your placement on the calendar, the <strong className="text-brand-gold font-black">R{depositAmount}</strong> deposit must be paid now.
                 </p>
 
                 {/* Payment Method Toggle */}
@@ -468,7 +561,6 @@ export default function Booking() {
                       </p>
                       <button 
                         onClick={() => {
-                          // Replace this URL with Gabby's actual Yoco or PayFast payment link
                           window.open("https://pay.yoco.com/dng-beauty", "_blank");
                         }}
                         className="w-full py-5 bg-brand-charcoal text-white font-black tracking-widest uppercase text-xs hover:bg-brand-gold transition-colors rounded-xl shadow-lg flex items-center justify-center gap-3"
