@@ -6,16 +6,23 @@
  @import "tailwindcss";
 
  @theme {
+   /* This overrides default white to a warm, luxurious Alabaster Cream */
+   --color-white: #FCFBF8; 
+   
+   /* Your specific brand colors */
    --color-brand-gold: #6b543c;
    --color-brand-charcoal: #0a0a0a;
-   --color-brand-light: #f4f5f6;
+   
+   /* A warm latte color for contrast sections */
+   --color-brand-light: #F5F2EB;
  }
  
  /* Global resets for the new aesthetic */
  body {
-   background-color: var(--color-brand-light);
+   background-color: var(--color-white); /* Forces the whole site to be cream */
    color: var(--color-brand-charcoal);
    -webkit-font-smoothing: antialiased;
+   scroll-behavior: smooth;
  }
  
  /* Luxury Container Utility */

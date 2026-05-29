@@ -5,171 +5,167 @@
 
 import { memo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { ArrowRight, Clock } from "lucide-react";
 
-// ----------------------------------------------------------------------
-// STATIC HOISTING: Objects extracted to prevent memory reallocation
-// ----------------------------------------------------------------------
+interface ServicesProps {
+  setPage: (page: string) => void;
+}
+
+// Static data extracted to prevent memory reallocation
+const SERVICES_DATA = [
+  { 
+    id: "c-full", 
+    name: "Classics Full Set", 
+    price: "R350", 
+    category: "Extensions", 
+    desc: "A 1:1 application for a natural, mascara-like finish.",
+    img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=600", 
+    duration: "90 min" 
+  },
+  { 
+    id: "h-full", 
+    name: "Hybrids Full Set", 
+    price: "R400", 
+    category: "Extensions", 
+    desc: "A blend of Classic and Volume for textured, wispy perfection.",
+    img: "https://images.unsplash.com/photo-1583241475879-11c769f37c35?auto=format&fit=crop&q=80&w=600", 
+    duration: "105 min" 
+  },
+  { 
+    id: "v-full", 
+    name: "Volume Full Set", 
+    price: "R450", 
+    category: "Extensions", 
+    desc: "Handmade fans applied to a single lash for dramatic density.",
+    img: "https://images.unsplash.com/photo-1600431521340-491eca880813?auto=format&fit=crop&q=80&w=600", 
+    duration: "120 min" 
+  },
+  { 
+    id: "b-lam", 
+    name: "Brow Lamination", 
+    price: "R300", 
+    category: "Brows", 
+    desc: "Restructures brow hairs to keep them in a desired shape.",
+    img: "https://images.unsplash.com/photo-1563172771-1ebe3f9e3466?auto=format&fit=crop&q=80&w=600", 
+    duration: "45 min" 
+  },
+  { 
+    id: "l-lift", 
+    name: "Lash Lift & Tint", 
+    price: "R350", 
+    category: "Lifts", 
+    desc: "A semi-permanent curl and tint for your natural lashes.",
+    img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=600", 
+    duration: "60 min" 
+  }
+];
+
+const CATEGORIES = ["All", "Extensions", "Brows", "Lifts"];
+
+// GPU-accelerated variants
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
 };
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  extensions: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=1200",
-  brows: "https://images.unsplash.com/photo-1563172771-1ebe3f9e3466?auto=format&fit=crop&q=80&w=1200",
-  training: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=1200",
-};
+const Services = memo(function Services({ setPage }: ServicesProps) {
+  const [activeCategory, setActiveCategory] = useState("All");
 
-const SERVICES_MENU: Record<string, Array<{ name: string; price: string; description: string; img: string }>> = {
-  extensions: [
-    { name: "Classics Full Set", price: "R350", description: "Natural, timeless elegance.", img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=200" },
-    { name: "Classics 2-3w Fill", price: "R250", description: "Regular maintenance set.", img: "https://images.unsplash.com/photo-1510017060271-45f217b0b414?auto=format&fit=crop&q=80&w=200" },
-    { name: "Hybrids Full Set", price: "R400", description: "Artistic mix of classic and volume.", img: "https://images.unsplash.com/photo-1583241475879-11c769f37c35?auto=format&fit=crop&q=80&w=200" },
-    { name: "Volume Full Set", price: "R450", description: "Luxurious, fluffy fullness.", img: "https://images.unsplash.com/photo-1600431521340-491eca880813?auto=format&fit=crop&q=80&w=200" },
-    { name: "Wispy Masterpiece", price: "R490", description: "Kim K inspired layered spikes.", img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=200" },
-  ],
-  brows: [
-    { name: "Brow Lamination", price: "R300", description: "Feathered, full look.", img: "https://images.unsplash.com/photo-1563172771-1ebe3f9e3466?auto=format&fit=crop&q=80&w=200" },
-    { name: "Lash Lift & Tint", price: "R350", description: "Perfect upward curve.", img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=200" },
-    { name: "Precision Wax", price: "R100", description: "Expert brow mapping.", img: "https://images.unsplash.com/photo-1621333100653-5477dae7323b?auto=format&fit=crop&q=80&w=200" },
-  ],
-  training: [
-    { name: "Beginner Masterclass", price: "POE", description: "Comprehensive lash education.", img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=200" },
-    { name: "Advanced Volume", price: "POE", description: "Advanced fan techniques.", img: "https://images.unsplash.com/photo-1583241475879-11c769f37c35?auto=format&fit=crop&q=80&w=200" },
-  ]
-};
-
-// ----------------------------------------------------------------------
-// MEMOIZED COMPONENT: Eliminates wasted render cycles
-// ----------------------------------------------------------------------
-const Services = memo(function Services() {
-  const [activeTab, setActiveTab] = useState("extensions");
+  const filteredServices = activeCategory === "All" 
+    ? SERVICES_DATA 
+    : SERVICES_DATA.filter(s => s.category === activeCategory);
 
   return (
-    <div className="pt-40 pb-32 min-h-screen bg-white">
-      <div className="luxury-container">
-        <motion.div 
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          className="mb-24"
-        >
-          <span className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 block">Our Pricing</span>
-          <h1 className="text-6xl md:text-8xl mb-8 font-black leading-none">Simple <br /> Prices.</h1>
-          <p className="text-brand-charcoal/80 text-lg md:text-xl max-w-md font-medium leading-relaxed">
-            Transparent pricing for all our beauty works. We use only the best materials for your eyes.
-          </p>
-        </motion.div>
-
-        {/* Dynamic Navigation Tabs */}
-        <div 
-          className="flex gap-10 mb-20 border-b border-black/10 overflow-x-auto pb-6 scrollbar-hide"
-          role="tablist"
-          aria-label="Service Categories"
-        >
-          {Object.keys(SERVICES_MENU).map((cat) => (
-            <button
-              key={cat}
-              role="tab"
-              aria-selected={activeTab === cat}
-              aria-controls={`${cat}-panel`}
-              onClick={() => setActiveTab(cat)}
-              className={`text-sm tracking-widest uppercase font-black transition-all whitespace-nowrap px-6 py-3 rounded-xl ${
-                activeTab === cat ? "bg-brand-charcoal text-white shadow-lg" : "text-brand-charcoal/40 hover:text-brand-charcoal hover:bg-gray-50"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* State-Driven Hero Image */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="aspect-[16/6] w-full mb-32 overflow-hidden bg-gray-100 rounded-2xl shadow-2xl relative"
-          >
-             <img 
-               src={CATEGORY_IMAGES[activeTab]} 
-               alt={`${activeTab} hero showcase`} 
-               className="absolute inset-0 w-full h-full object-cover"
-               loading="lazy"
-               decoding="async"
-               referrerPolicy="no-referrer"
-             />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Animated Menu Roster */}
-        <div className="max-w-4xl" id={`${activeTab}-panel`} role="tabpanel">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab + "-list"}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, x: 20 }}
-              variants={{
-                hidden: { opacity: 0, x: -20 },
-                visible: { opacity: 1, x: 0, transition: { staggerChildren: 0.05, delayChildren: 0.1 } }
-              }}
-              className="space-y-8"
-            >
-               {SERVICES_MENU[activeTab].map((item, i) => (
-                 <motion.div 
-                    key={item.name} 
-                    variants={fadeUp}
-                    className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-black/5 pb-8 group"
-                  >
-                    <div className="flex items-center gap-8">
-                      <div className="w-20 h-20 rounded-xl overflow-hidden shadow-sm hidden sm:block bg-gray-100 relative">
-                         <img 
-                           src={item.img} 
-                           alt={item.name} 
-                           className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
-                           loading="lazy"
-                           decoding="async"
-                           referrerPolicy="no-referrer"
-                         />
-                      </div>
-                      <div className="max-w-md">
-                         <h3 className="text-3xl font-black mb-2 group-hover:text-brand-gold transition-colors">{item.name}</h3>
-                         <p className="text-brand-charcoal/80 font-medium text-lg">{item.description}</p>
-                      </div>
-                    </div>
-                    <div className="text-4xl font-black text-brand-charcoal bg-gray-50 px-8 py-4 rounded-xl border border-black/5 shadow-sm group-hover:shadow-md group-hover:border-brand-gold/30 transition-all">
-                       {item.price}
-                    </div>
-                 </motion.div>
-               ))}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal pt-32 pb-20">
+      <div className="max-w-7xl mx-auto px-6 lg:px-20">
         
-        {/* Footer CTA */}
+        {/* Header Section */}
         <motion.div 
-           initial="hidden"
-           whileInView="visible"
-           viewport={{ once: true }}
-           variants={fadeUp}
-           className="mt-40 text-center py-32 bg-gray-50 rounded-3xl border border-black/5 shadow-inner"
+            initial="hidden" animate="visible" variants={fadeUp}
+            className="text-center mb-16"
+            style={{ willChange: "opacity, transform" }}
         >
-            <h2 className="text-4xl md:text-5xl font-black mb-12 text-brand-charcoal">Are you ready to book?</h2>
-            <div className="flex justify-center gap-6">
-               <button 
-                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} 
-                 className="minimal-btn shadow-xl hover:shadow-brand-gold/20"
-                 aria-label="Scroll to top to book appointment"
-               >
-                 Book Appointment
-               </button>
-            </div>
+            <span className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 block">Our Menu</span>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">Signature Services.</h1>
+            <p className="text-brand-charcoal/60 text-lg font-medium max-w-xl mx-auto">
+                Bespoke enhancements tailored to your natural facial architecture.
+            </p>
         </motion.div>
+
+        {/* High-Performance Category Filter */}
+        <motion.div 
+            initial="hidden" animate="visible" variants={fadeUp}
+            className="flex flex-wrap justify-center gap-2 mb-16"
+        >
+            {CATEGORIES.map(category => (
+                <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+                        activeCategory === category 
+                        ? "bg-brand-charcoal text-white shadow-lg scale-105" 
+                        : "bg-white text-brand-charcoal/50 hover:bg-gray-50 border border-black/5"
+                    }`}
+                >
+                    {category}
+                </button>
+            ))}
+        </motion.div>
+
+        {/* Animated Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <AnimatePresence mode="popLayout">
+                {filteredServices.map((service) => (
+                    <motion.div 
+                        key={service.id}
+                        layout
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        variants={fadeUp}
+                        className="bg-white border border-black/5 flex flex-col group overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 rounded-2xl"
+                        style={{ willChange: "opacity, transform" }}
+                    >
+                        <div className="aspect-[4/3] overflow-hidden bg-gray-100 relative">
+                            <img 
+                                src={service.img} 
+                                alt={service.name}
+                                // Asynchronous decoding to prevent main thread blocking
+                                decoding="async"
+                                loading="lazy"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                                <Clock size={12} className="text-brand-gold" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-charcoal">{service.duration}</span>
+                            </div>
+                        </div>
+                        
+                        <div className="p-8 flex flex-col flex-grow">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold mb-2 block">{service.category}</span>
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-2xl font-black tracking-tight text-brand-charcoal">{service.name}</h3>
+                                <span className="text-xl font-black text-brand-charcoal">{service.price}</span>
+                            </div>
+                            <p className="text-brand-charcoal/60 font-medium mb-8 flex-grow">
+                                {service.desc}
+                            </p>
+                            
+                            <button 
+                                onClick={() => setPage("booking")}
+                                className="w-full py-4 bg-brand-light text-brand-charcoal font-black tracking-widest uppercase text-xs hover:bg-brand-charcoal hover:text-white transition-colors duration-300 flex items-center justify-center gap-2 rounded-xl"
+                            >
+                                Book Session <ArrowRight size={14} />
+                            </button>
+                        </div>
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+        </div>
+
       </div>
-    </div>
+    </main>
   );
 });
 

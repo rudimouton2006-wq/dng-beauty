@@ -8,12 +8,14 @@ import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import Artist from "./Artist";
 import Reviews from "./Reviews";
+// Ensure this path matches your actual image location
 import bgImage from "../assets/HomePageBackground.jpg"; 
 
 interface HomeProps {
   setPage: (page: string) => void;
 }
 
+// Moved static data OUTSIDE the component to prevent memory reallocation on every render
 const SERVICES = [
   { 
     title: "Classic Lashes", 
@@ -35,31 +37,36 @@ const SERVICES = [
   }
 ];
 
+// GPU-accelerated animation variants
 const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } 
+  }
 };
 
+// React.memo prevents the Home component from re-rendering unless setPage changes
 const Home = memo(function Home({ setPage }: HomeProps) {
   return (
-    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative">
+    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative overflow-x-hidden">
       
-      {/* 1. ULTRA-CLEAN HERO SECTION WITH MAXIMUM VISIBILITY */}
+      {/* HERO SECTION */}
       <section 
-        className="relative min-h-screen flex items-center pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat"
+        className="relative min-h-screen flex items-center pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat will-change-transform"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {/* THE FIX: A gradient overlay. 
-            On mobile, it's a soft white wash for readability.
-            On desktop, it fades from white on the left to COMPLETELY transparent on the right! */}
-        <div className="absolute inset-0 bg-brand-light/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-brand-light/95 lg:via-brand-light/60 lg:to-transparent z-0"></div>
+        {/* Transparent gradient overlay for readability without blocking the image */}
+        <div className="absolute inset-0 bg-brand-light/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-brand-light/95 lg:via-brand-light/70 lg:to-transparent z-0"></div>
         
-        {/* Left Side: Typography (Now takes up half the screen, leaving the right side empty for the image) */}
         <div className="relative z-10 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
           <motion.div
              initial="hidden"
              animate="visible"
              variants={fadeUp}
+             // Forcing hardware acceleration for the hero text
+             style={{ willChange: "opacity, transform" }}
           >
             <div className="flex items-center gap-4 mb-8">
                 <div className="w-8 h-[1px] bg-brand-gold"></div>
@@ -92,11 +99,9 @@ const Home = memo(function Home({ setPage }: HomeProps) {
             </div>
           </motion.div>
         </div>
-        
-        {/* THE FIX: The broken right side image has been completely deleted! */}
       </section>
 
-      {/* 2. THE ESSENTIALS (CLEAN GRID) */}
+      {/* ESSENTIALS GRID */}
       <section className="py-32 px-6 lg:px-20 bg-white relative z-10 shadow-2xl">
         <div className="max-w-7xl mx-auto">
             
@@ -120,19 +125,23 @@ const Home = memo(function Home({ setPage }: HomeProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {SERVICES.map((item, i) => (
                 <motion.div 
-                    key={i} 
+                    key={item.title} 
                     initial="hidden"
                     whileInView="visible"
-                    viewport={{ once: true, margin: "-50px" }}
+                    viewport={{ once: true, margin: "0px 0px -50px 0px" }}
                     variants={fadeUp}
                     transition={{ delay: i * 0.1 }}
                     className="group cursor-pointer flex flex-col"
                     onClick={() => setPage("services")}
+                    style={{ willChange: "opacity, transform" }}
                 >
                     <div className="aspect-[4/5] mb-6 overflow-hidden bg-brand-light relative">
                         <img 
                             src={item.img} 
                             alt={item.title}
+                            // Crucial for performance: tells the browser to decode the image off the main thread
+                            decoding="async"
+                            loading="lazy"
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                     </div>
@@ -150,13 +159,14 @@ const Home = memo(function Home({ setPage }: HomeProps) {
         </div>
       </section>
 
-      {/* 3. SEAMLESS COMPONENT INTEGRATION */}
+      {/* COMPONENT INTEGRATION */}
       <Artist />
       <Reviews />
 
-      {/* 4. MINIMALIST FOOTER CTA */}
+      {/* FOOTER CTA */}
       <section className="py-40 bg-brand-charcoal text-center px-4 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full bg-brand-gold/5 blur-3xl rounded-full"></div>
+        {/* Hardware accelerated blur */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full bg-brand-gold/5 blur-3xl rounded-full" style={{ transform: "translateZ(0)" }}></div>
         <div className="relative z-10">
             <h2 className="text-white text-4xl md:text-6xl font-black tracking-tighter mb-10">
                 Ready for your <br/> transformation?

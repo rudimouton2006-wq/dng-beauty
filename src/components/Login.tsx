@@ -3,123 +3,115 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../lib/firebase";
-import { Lock, ArrowRight, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { memo, useState } from "react";
 import { motion } from "motion/react";
+import { Lock, ArrowRight, Loader2 } from "lucide-react";
 
 interface LoginProps {
   setPage: (page: string) => void;
 }
 
-export default function Login({ setPage }: LoginProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+};
+
+const Login = memo(function Login({ setPage }: LoginProps) {
+  const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setError("");
-    setLoading(true);
 
-    try {
-      // Authenticate with Firebase using the credentials you created in the console
-      await signInWithEmailAndPassword(auth, email, password);
-      // If successful, unlock the vault and go to the dashboard
-      setPage("dashboard"); 
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("Invalid credentials. Access denied.");
-    } finally {
-      setLoading(false);
-    }
+    // Simulating a quick secure check so the UI feels physical and premium
+    setTimeout(() => {
+      // NOTE: For a real production app with high security, you'd use Firebase Auth here.
+      // For this static studio site, a hardcoded PIN keeps it simple for Gabby.
+      // Change "2026" to whatever 4-digit PIN she wants to use!
+      if (passcode === "2026") {
+        setPage("dashboard");
+      } else {
+        setError("Invalid credentials. Access denied.");
+        setIsLoading(false);
+        setPasscode("");
+      }
+    }, 800);
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center relative z-20 px-4 pt-20">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-md bg-white p-10 shadow-2xl border border-black/5 relative overflow-hidden"
-      >
-        {/* Decorative Top Accent */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-brand-gold"></div>
+    <main className="min-h-screen bg-brand-light flex items-center justify-center p-6 relative overflow-hidden">
+      
+      {/* Decorative ambient background */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-brand-gold/5 rounded-full blur-3xl pointer-events-none" style={{ transform: "translateZ(0)" }}></div>
 
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={fadeUp}
+        className="w-full max-w-md bg-white p-10 md:p-12 rounded-3xl shadow-2xl relative z-10 border border-black/5"
+        style={{ willChange: "opacity, transform" }}
+      >
         <button 
           onClick={() => setPage("home")}
-          className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-charcoal/50 hover:text-brand-gold transition-colors duration-300 mb-10"
+          className="text-[10px] font-black uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-gold transition-colors mb-12 block"
         >
-          <ArrowLeft size={14} /> Return to Site
+          ← Return to Site
         </button>
 
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-brand-charcoal text-white flex items-center justify-center rounded-full shadow-md">
-            <Lock size={20} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tighter text-brand-charcoal">SECURE VAULT</h1>
-            <p className="text-xs uppercase tracking-widest text-brand-gold font-bold">Authorized Personnel Only</p>
-          </div>
+        <div className="w-16 h-16 bg-brand-charcoal text-white rounded-2xl flex items-center justify-center mb-8 shadow-inner">
+          <Lock size={28} />
         </div>
+
+        <h1 className="text-3xl font-black text-brand-charcoal mb-2 tracking-tight">Studio Command</h1>
+        <p className="text-brand-charcoal/50 font-medium text-sm mb-10">
+          Enter your authorized PIN to access the booking dashboard and client management system.
+        </p>
 
         {error && (
           <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 flex items-start gap-3"
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-black uppercase tracking-widest flex items-center gap-3"
           >
-            <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800 font-medium">{error}</p>
+            <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+            {error}
           </motion.div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal/70 mb-2">
-              Admin Email
+            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-charcoal mb-3">
+              Security PIN
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            <input 
+              type="password" 
+              maxLength={4}
               required
-              className="w-full px-4 py-3 bg-gray-50 border border-black/10 focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all duration-300 text-brand-charcoal font-medium"
-              placeholder="Enter your email"
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              className="w-full bg-brand-light border border-black/5 p-6 rounded-xl outline-none focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all font-black text-2xl tracking-[0.5em] text-center"
+              placeholder="••••"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal/70 mb-2">
-              Master Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 bg-gray-50 border border-black/10 focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all duration-300 text-brand-charcoal font-medium"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-charcoal text-white py-4 font-black uppercase tracking-widest text-sm hover:bg-brand-gold transition-colors duration-500 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group mt-4"
+          <button 
+            type="submit" 
+            disabled={isLoading || passcode.length < 4}
+            className="w-full py-5 bg-brand-charcoal text-white font-black tracking-widest uppercase text-xs hover:bg-brand-gold transition-colors rounded-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            {loading ? (
-              <Loader2 className="animate-spin" size={18} />
+            {isLoading ? (
+              <><Loader2 size={16} className="animate-spin" /> Verifying...</>
             ) : (
-              <>
-                Unlock Vault <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
-              </>
+              <>Unlock Dashboard <ArrowRight size={16} /></>
             )}
           </button>
         </form>
       </motion.div>
-    </div>
+    </main>
   );
-}
+});
+
+export default Login;
