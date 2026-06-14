@@ -1,4 +1,8 @@
-// src/components/Home.tsx
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { memo } from "react";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
@@ -43,10 +47,10 @@ const Home = memo(function Home({ setPage }: HomeProps) {
   return (
     <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-black selection:text-white relative overflow-x-hidden">
       
-      {/* HERO SECTION */}
+      {/* HERO SECTION - Now mapped to your local home-bg.jpg */}
       <section 
         className="relative min-h-screen flex items-center pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat will-change-transform"
-        style={{ backgroundImage: `url('/images/home-hero-lashes.jpg')` }}
+        style={{ backgroundImage: `url('/images/home-bg.jpg')` }}
       >
         <div className="absolute inset-0 bg-[#FAF9F6]/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-[#FAF9F6]/95 lg:via-[#FAF9F6]/70 lg:to-transparent z-0"></div>
         

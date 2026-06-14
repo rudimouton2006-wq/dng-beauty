@@ -6,7 +6,6 @@
 import { memo } from "react";
 import { motion } from "motion/react";
 
-// Animation variants separated to prevent recreation on each render
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { 
@@ -30,21 +29,19 @@ const Artist = memo(function Artist() {
             className="w-full lg:w-1/2 relative"
             style={{ willChange: "opacity, transform" }}
         >
-            {/* Soft background drop shadow */}
             <div className="absolute -inset-4 bg-gray-200 blur-2xl rounded-full z-0" style={{ transform: "translateZ(0)" }}></div>
             
             <div className="aspect-[3/4] relative z-10 overflow-hidden shadow-sm rounded-sm">
+                {/* Now mapped directly to your local artist-gabby.jpg file */}
                 <img 
-                    src="/images/artist-studio.jpg" 
+                    src="/images/artist-gabby.jpg" 
                     alt="Master Lash Artist Gabrielle"
-                    // Crucial for performance: tells the browser to decode off the main thread
                     decoding="async"
                     loading="lazy"
                     className="w-full h-full object-cover"
                 />
             </div>
             
-            {/* Decorative Element */}
             <div className="absolute -bottom-8 -right-8 w-32 h-32 border border-gray-200 rounded-full z-0"></div>
         </motion.div>
 
