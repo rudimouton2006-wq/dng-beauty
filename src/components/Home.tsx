@@ -8,8 +8,6 @@ import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import Artist from "./Artist";
 import Reviews from "./Reviews";
-// Ensure this path matches your actual image location
-import bgImage from "../assets/HomePageBackground.jpg"; 
 
 interface HomeProps {
   setPage: (page: string) => void;
@@ -21,19 +19,19 @@ const SERVICES = [
     title: "Classic Lashes", 
     price: "From R350", 
     desc: "A natural, mascara-like finish.",
-    img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=800" 
+    img: "/images/classic-extensions.jpg" 
   },
   { 
     title: "Volume Lashes", 
     price: "From R450", 
     desc: "Full, fluffy, and dramatic.",
-    img: "https://images.unsplash.com/photo-1583241475879-11c769f37c35?auto=format&fit=crop&q=80&w=800" 
+    img: "/images/volume-extensions.jpg" 
   },
   { 
     title: "Brow Styling", 
     price: "From R200", 
     desc: "Sculpted perfection.",
-    img: "https://images.unsplash.com/photo-1600431521340-491eca880813?auto=format&fit=crop&q=80&w=800" 
+    img: "/images/brow-shape-tint.jpg" 
   }
 ];
 
@@ -50,15 +48,15 @@ const fadeUp = {
 // React.memo prevents the Home component from re-rendering unless setPage changes
 const Home = memo(function Home({ setPage }: HomeProps) {
   return (
-    <main className="bg-brand-light min-h-screen font-sans text-brand-charcoal selection:bg-brand-gold selection:text-white relative overflow-x-hidden">
+    <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-black selection:text-white relative overflow-x-hidden">
       
       {/* HERO SECTION */}
       <section 
         className="relative min-h-screen flex items-center pt-20 lg:pt-0 bg-cover bg-center bg-no-repeat will-change-transform"
-        style={{ backgroundImage: `url(${bgImage})` }}
+        style={{ backgroundImage: `url('/images/hero-welcome.jpg')` }}
       >
         {/* Transparent gradient overlay for readability without blocking the image */}
-        <div className="absolute inset-0 bg-brand-light/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-brand-light/95 lg:via-brand-light/70 lg:to-transparent z-0"></div>
+        <div className="absolute inset-0 bg-[#FAF9F6]/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-[#FAF9F6]/95 lg:via-[#FAF9F6]/70 lg:to-transparent z-0"></div>
         
         <div className="relative z-10 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
           <motion.div
@@ -69,30 +67,30 @@ const Home = memo(function Home({ setPage }: HomeProps) {
              style={{ willChange: "opacity, transform" }}
           >
             <div className="flex items-center gap-4 mb-8">
-                <div className="w-8 h-[1px] bg-brand-gold"></div>
-                <span className="text-brand-gold font-bold tracking-[0.2em] uppercase text-xs drop-shadow-sm">
-                    Cape Town's Premier Studio
+                <div className="w-8 h-[1px] bg-[#1A1A1A]"></div>
+                <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-xs drop-shadow-sm">
+                    DnG Beauty
                 </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-[7.5rem] font-black tracking-tighter text-brand-charcoal leading-[0.9] mb-8 drop-shadow-lg">
-              Beautiful <br/> Eyes.
+            <h1 className="text-5xl sm:text-7xl lg:text-[7.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-8 drop-shadow-lg">
+              Gabrielle <br/> Lashes
             </h1>
             
-            <p className="text-brand-charcoal/90 text-lg md:text-xl max-w-md font-medium leading-relaxed mb-12 drop-shadow-md">
-              Expertistry and precision. We create flawless, natural enhancements tailored to your unique facial architecture.
+            <p className="text-gray-700 text-lg md:text-xl max-w-md font-medium leading-relaxed mb-12 drop-shadow-md tracking-wide">
+              Luxury Lash Extensions Tailored To Your Eye Shape.
             </p>
 
             <div className="flex flex-col sm:flex-row items-start gap-6">
               <button 
                 onClick={() => setPage("booking")}
-                className="px-10 py-4 bg-brand-charcoal text-white font-bold tracking-widest uppercase text-xs hover:bg-brand-gold transition-colors duration-300 shadow-xl"
+                className="px-10 py-4 bg-black text-white font-bold tracking-widest uppercase text-xs hover:bg-gray-800 transition-colors duration-300 shadow-xl"
               >
-                Book Appointment
+                Start Consultation
               </button>
               <button 
                 onClick={() => setPage("services")}
-                className="px-10 py-4 bg-white/50 backdrop-blur-sm text-brand-charcoal font-bold tracking-widest uppercase text-xs flex items-center gap-3 hover:bg-white transition-colors duration-300 shadow-sm"
+                className="px-10 py-4 bg-white/50 backdrop-blur-sm text-black font-bold tracking-widest uppercase text-xs flex items-center gap-3 hover:bg-white transition-colors duration-300 shadow-sm"
               >
                 View Menu <ArrowRight size={14} />
               </button>
@@ -107,16 +105,16 @@ const Home = memo(function Home({ setPage }: HomeProps) {
             
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
                 <div>
-                    <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-brand-charcoal mb-4">
+                    <h2 className="text-3xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-4 uppercase">
                         The Essentials.
                     </h2>
-                    <p className="text-brand-charcoal/50 font-medium text-lg">
+                    <p className="text-gray-500 font-medium text-lg tracking-wide">
                         Our most requested signature services.
                     </p>
                 </div>
                 <button 
                     onClick={() => setPage("services")}
-                    className="pb-1 border-b border-brand-gold text-brand-charcoal font-bold tracking-widest uppercase text-xs hover:text-brand-gold transition-colors"
+                    className="pb-1 border-b border-black text-[#1A1A1A] font-bold tracking-widest uppercase text-xs hover:text-gray-500 transition-colors"
                 >
                     View All Services
                 </button>
@@ -135,7 +133,7 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                     onClick={() => setPage("services")}
                     style={{ willChange: "opacity, transform" }}
                 >
-                    <div className="aspect-[4/5] mb-6 overflow-hidden bg-brand-light relative">
+                    <div className="aspect-[4/5] mb-6 overflow-hidden bg-[#FAF9F6] relative">
                         <img 
                             src={item.img} 
                             alt={item.title}
@@ -147,10 +145,10 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <h4 className="text-xl font-bold tracking-tight text-brand-charcoal">{item.title}</h4>
-                            <span className="text-sm font-black text-brand-gold">{item.price}</span>
+                            <h4 className="text-xl font-light tracking-wide text-[#1A1A1A]">{item.title}</h4>
+                            <span className="text-sm font-medium text-gray-700">{item.price}</span>
                         </div>
-                        <p className="text-brand-charcoal/60 font-medium">{item.desc}</p>
+                        <p className="text-gray-500 font-medium">{item.desc}</p>
                     </div>
                 </motion.div>
               ))}
@@ -164,16 +162,14 @@ const Home = memo(function Home({ setPage }: HomeProps) {
       <Reviews />
 
       {/* FOOTER CTA */}
-      <section className="py-40 bg-brand-charcoal text-center px-4 relative overflow-hidden">
-        {/* Hardware accelerated blur */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full bg-brand-gold/5 blur-3xl rounded-full" style={{ transform: "translateZ(0)" }}></div>
+      <section className="py-40 bg-[#1A1A1A] text-center px-4 relative overflow-hidden">
         <div className="relative z-10">
-            <h2 className="text-white text-4xl md:text-6xl font-black tracking-tighter mb-10">
+            <h2 className="text-white text-4xl md:text-6xl font-light tracking-tighter mb-10">
                 Ready for your <br/> transformation?
             </h2>
             <button 
                 onClick={() => setPage("booking")}
-                className="px-12 py-5 bg-white text-brand-charcoal font-black tracking-widest uppercase text-xs hover:bg-brand-gold hover:text-white transition-all duration-300"
+                className="px-12 py-5 bg-white text-[#1A1A1A] font-black tracking-widest uppercase text-xs hover:bg-gray-200 transition-all duration-300"
             >
                 Secure Your Spot
             </button>

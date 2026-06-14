@@ -21,17 +21,20 @@ interface Service {
   isMasterclass?: boolean;
 }
 
+// Updated with the exact services and local images from Phase 1
 const SERVICES: Service[] = [
-  { id: "c-full", name: "Classics Full Set", price: "R350", category: "Extensions", img: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=400", duration: "90 min" },
-  { id: "h-full", name: "Hybrids Full Set", price: "R400", category: "Extensions", img: "https://images.unsplash.com/photo-1583241475879-11c769f37c35?auto=format&fit=crop&q=80&w=400", duration: "105 min" },
-  { id: "v-full", name: "Volume Full Set", price: "R450", category: "Extensions", img: "https://images.unsplash.com/photo-1600431521340-491eca880813?auto=format&fit=crop&q=80&w=400", duration: "120 min" },
-  { id: "b-lam", name: "Brow Lamination", price: "R300", category: "Brows", img: "https://images.unsplash.com/photo-1563172771-1ebe3f9e3466?auto=format&fit=crop&q=80&w=400", duration: "45 min" },
-  { id: "l-lift", name: "Lash Lift & Tint", price: "R350", category: "Lifts", img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=400", duration: "60 min" },
-  { id: "m-class", name: "2-Day Lash Masterclass", price: "R3000", category: "Training", img: "https://images.unsplash.com/photo-1541533260371-b8fabc4b0652?auto=format&fit=crop&q=80&w=400", duration: "2 Days", isMasterclass: true }
+  { id: "c-ext", name: "Classic Extensions", price: "R350", category: "Extensions", img: "/images/classic-extensions.jpg", duration: "90 min" },
+  { id: "h-ext", name: "Hybrid Extensions", price: "R400", category: "Extensions", img: "/images/hybrid-extensions.jpg", duration: "105 min" },
+  { id: "v-ext", name: "Volume Extensions", price: "R450", category: "Extensions", img: "/images/volume-extensions.jpg", duration: "120 min" },
+  { id: "b-lam", name: "Brow Lamination", price: "R300", category: "Brows", img: "/images/brow-lamination.jpg", duration: "45 min" },
+  { id: "l-lift", name: "Lash Lift", price: "R350", category: "Lifts", img: "/images/lash-lift.jpg", duration: "60 min" },
+  { id: "m-class", name: "2-Day Lash Masterclass", price: "R3000", category: "Training", img: "/images/hero-welcome.jpg", duration: "2 Days", isMasterclass: true }
 ];
 
 export default function Booking() {
   const [step, setStep] = useState(1);
+  
+  // Phase 3: Added all Consultation Form parameters to state
   const [bookingData, setBookingData] = useState({
     serviceId: "",
     serviceName: "",
@@ -40,10 +43,15 @@ export default function Booking() {
     customerName: "",
     customerEmail: "",
     customerPhone: "",
+    eyeShape: "Almond",
+    lashStyle: "Classic",
+    preferredMapping: "Cat Eye",
+    allergies: "",
+    consent: false,
     totalPrice: 0,
   });
   
-  // Anti-Overlap State (Batch 1)
+  // Anti-Overlap State
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isCheckingSlots, setIsCheckingSlots] = useState(false);
   
@@ -66,7 +74,6 @@ export default function Booking() {
   const today = new Date().toISOString().split('T')[0];
   const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
 
-  // --- BATCH 1: Anti-Overlap Real-Time Query ---
   useEffect(() => {
     if (!bookingData.date) {
       setBookedSlots([]);
@@ -85,7 +92,6 @@ export default function Booking() {
         const taken: string[] = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          // Assume "cancelled" statuses free up the slot; all others lock it
           if (data.booking_status !== "cancelled" && data.status !== "cancelled") {
             taken.push(data.time);
           }
@@ -93,7 +99,6 @@ export default function Booking() {
         
         if (isMounted) {
           setBookedSlots(taken);
-          // Auto-clear selected time if the user had it selected but it is actually taken
           if (taken.includes(bookingData.time)) {
             setBookingData(prev => ({ ...prev, time: "" }));
           }
@@ -106,7 +111,6 @@ export default function Booking() {
     };
 
     fetchTakenSlots();
-
     return () => { isMounted = false; };
   }, [bookingData.date, bookingData.time]);
 
@@ -122,16 +126,15 @@ export default function Booking() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-// --- BATCH 2: Form Validation Logic ---
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Strips spaces/dashes and checks for standard 10-digit or +27 formats
     const phoneClean = bookingData.customerPhone.replace(/[\s-]/g, '');
     const phoneRegex = /^(\+27|0)[1-8][0-9]{8}$|^\+?[0-9]{10,14}$/;
 
     if (!bookingData.customerName.trim()) return "Please enter your full name.";
     if (!bookingData.customerEmail.trim() || !emailRegex.test(bookingData.customerEmail)) return "Please enter a valid email address.";
     if (!bookingData.customerPhone.trim() || !phoneRegex.test(phoneClean)) return "Please enter a valid phone number (e.g., 082 123 4567).";
+    if (!bookingData.consent) return "You must agree to the terms and conditions.";
     
     return "";
   };
@@ -139,7 +142,6 @@ export default function Booking() {
   const handleDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // BATCH 2: Run strict validation before hitting Firebase
     const validationError = validateForm();
     if (validationError) {
       setSubmissionError(validationError);
@@ -153,13 +155,12 @@ export default function Booking() {
       const appointmentDateTime = new Date(`${bookingData.date}T${bookingData.time}`);
       const cancelDeadline = new Date(appointmentDateTime.getTime() - (60 * 60 * 1000));
 
-      // BATCH 3: Explicitly mark as pending deposit and setup CRM fields
       const finalBookingData = {
         ...bookingData, 
         booking_status: "pending_deposit", 
-        status: "pending",           // Matches Batch 1 CRM requirements
-        depositPaid: false,          // Matches Batch 1 CRM requirements
-        paymentMethod: "Pending",    // Matches Batch 1 CRM requirements
+        status: "pending",             
+        depositPaid: false,          
+        paymentMethod: "Pending",    
         deposit_required: depositAmount,
         cancellation_eligibility: "eligible",
         appointment_timestamp: appointmentDateTime.toISOString(),
@@ -181,6 +182,9 @@ export default function Booking() {
             client_email: bookingData.customerEmail,
             client_phone: bookingData.customerPhone,
             service: bookingData.serviceName,
+            eye_shape: bookingData.eyeShape,
+            mapping: bookingData.preferredMapping,
+            allergies: bookingData.allergies || "None",
             date: bookingData.date,
             time: bookingData.time,
             deposit: `R${depositAmount}`
@@ -237,7 +241,6 @@ export default function Booking() {
     link.click();
     document.body.removeChild(link);
   };
-
   return (
     <div className="pt-40 pb-32 bg-white min-h-screen">
       <div className="luxury-container">
@@ -362,7 +365,7 @@ export default function Booking() {
                       id="date-picker"
                       type="date" 
                       min={today}
-                      className="w-full p-6 border border-black/10 focus:border-brand-gold outline-none h-16 bg-white font-bold rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-brand-gold/10"
+                      className="w-full p-6 border border-black/10 focus:border-brand-gold outline-none h-16 bg-white font-bold rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-brand-gold/10 cursor-pointer"
                       onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
                       value={bookingData.date}
                     />
@@ -416,20 +419,20 @@ export default function Booking() {
                   <button 
                     disabled={!bookingData.date || !bookingData.time}
                     onClick={() => { setStep(3); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    className="minimal-btn w-full shadow-xl flex items-center justify-center gap-4 py-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-charcoal disabled:hover:scale-100"
+                    className="minimal-btn w-full shadow-xl flex items-center justify-center gap-4 py-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-charcoal disabled:hover:scale-100 bg-brand-charcoal text-white font-black uppercase tracking-widest text-xs rounded-xl"
                   >
-                    Continue to Details <ArrowRight size={18} />
+                    Continue to Consultation <ArrowRight size={18} />
                   </button>
                 </div>
               </motion.div>
             )}
 
-            {/* STEP 3: Client Details */}
+            {/* STEP 3: Client Details & Lash Consultation */}
             {step === 3 && (
               <motion.div key="step3" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-12">
                 <button onClick={() => setStep(2)} className="text-xs tracking-widest uppercase font-black text-brand-charcoal/40 hover:text-brand-gold transition-colors mb-8 flex items-center gap-2">← Change Schedule</button>
                 <div className="flex justify-between items-end mb-10 border-b border-black/5 pb-8">
-                  <h2 className="text-4xl font-black">Step 3. <br /><span className="text-brand-charcoal/50 text-2xl font-black uppercase tracking-widest">Your Details</span></h2>
+                  <h2 className="text-4xl font-black">Step 3. <br /><span className="text-brand-charcoal/50 text-2xl font-black uppercase tracking-widest">Consultation</span></h2>
                   <span className="text-brand-gold font-black text-xl">03 / 03</span>
                 </div>
                 
@@ -440,7 +443,9 @@ export default function Booking() {
                   </motion.div>
                 )}
 
-<form onSubmit={handleDetailsSubmit} className="space-y-8">
+                <form onSubmit={handleDetailsSubmit} className="space-y-8">
+                  
+                  {/* Basic Info */}
                   <div className="space-y-6">
                     <input 
                       required 
@@ -450,23 +455,109 @@ export default function Booking() {
                       value={bookingData.customerName} 
                       onChange={(e) => setBookingData({...bookingData, customerName: e.target.value})} 
                     />
-                    <input 
-                      required 
-                      disabled={isSubmitting}
-                      type="email" 
-                      placeholder="Your Email Address" 
-                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
-                      value={bookingData.customerEmail} 
-                      onChange={(e) => setBookingData({...bookingData, customerEmail: e.target.value})} 
-                    />
-                    <input 
-                      required 
-                      disabled={isSubmitting}
-                      placeholder="WhatsApp / Contact Number" 
-                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
-                      value={bookingData.customerPhone} 
-                      onChange={(e) => setBookingData({...bookingData, customerPhone: e.target.value})} 
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <input 
+                        required 
+                        disabled={isSubmitting}
+                        type="email" 
+                        placeholder="Your Email Address" 
+                        className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
+                        value={bookingData.customerEmail} 
+                        onChange={(e) => setBookingData({...bookingData, customerEmail: e.target.value})} 
+                      />
+                      <input 
+                        required 
+                        disabled={isSubmitting}
+                        placeholder="Contact Number" 
+                        className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
+                        value={bookingData.customerPhone} 
+                        onChange={(e) => setBookingData({...bookingData, customerPhone: e.target.value})} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phase 3 Consultation Form Fields */}
+                  <div className="bg-white p-6 md:p-8 rounded-2xl border border-black/5 shadow-sm space-y-6">
+                    <h3 className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 border-b border-black/5 pb-4">Lash Consultation Details</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Eye Shape</label>
+                        <select 
+                          disabled={isSubmitting}
+                          value={bookingData.eyeShape}
+                          onChange={(e) => setBookingData({...bookingData, eyeShape: e.target.value})}
+                          className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors cursor-pointer"
+                        >
+                          <option value="Almond">Almond</option>
+                          <option value="Round">Round</option>
+                          <option value="Hooded">Hooded</option>
+                          <option value="Deep Set">Deep Set</option>
+                          <option value="Monolid">Monolid</option>
+                          <option value="Downturned">Downturned</option>
+                          <option value="Upturned">Upturned</option>
+                          <option value="Not Sure">Not Sure</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Desired Lash Style</label>
+                        <select 
+                          disabled={isSubmitting}
+                          value={bookingData.lashStyle}
+                          onChange={(e) => setBookingData({...bookingData, lashStyle: e.target.value})}
+                          className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors cursor-pointer"
+                        >
+                          <option value="Classic">Classic Extensions</option>
+                          <option value="Hybrid">Hybrid Extensions</option>
+                          <option value="Volume">Volume Extensions</option>
+                          <option value="Lash Lift">Lash Lift</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Preferred Mapping</label>
+                      <select 
+                        disabled={isSubmitting}
+                        value={bookingData.preferredMapping}
+                        onChange={(e) => setBookingData({...bookingData, preferredMapping: e.target.value})}
+                        className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors cursor-pointer"
+                      >
+                        <option value="Cat Eye">Cat Eye</option>
+                        <option value="Doll Eye">Doll Eye</option>
+                        <option value="Open Eye">Open Eye</option>
+                        <option value="Squirrel Eye">Squirrel Eye</option>
+                        <option value="Recommend For Me">Recommend For Me</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Any allergies or sensitivities?</label>
+                      <textarea 
+                        disabled={isSubmitting}
+                        rows={2}
+                        placeholder="Leave blank if none..."
+                        value={bookingData.allergies}
+                        onChange={(e) => setBookingData({...bookingData, allergies: e.target.value})}
+                        className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors resize-none placeholder:text-brand-charcoal/30"
+                      />
+                    </div>
+
+                    <div className="flex items-start gap-4 pt-4">
+                      <input 
+                        type="checkbox" 
+                        id="consent"
+                        required
+                        disabled={isSubmitting}
+                        checked={bookingData.consent}
+                        onChange={(e) => setBookingData({...bookingData, consent: e.target.checked})}
+                        className="mt-1 w-5 h-5 accent-brand-charcoal cursor-pointer"
+                      />
+                      <label htmlFor="consent" className="text-xs font-bold leading-relaxed text-brand-charcoal/70 cursor-pointer">
+                        I agree to the terms and conditions, and I confirm the above consultation details are accurate.
+                      </label>
+                    </div>
                   </div>
                   
                   {/* Digital Receipt / Summary */}
@@ -486,14 +577,14 @@ export default function Booking() {
                   </div>
 
                   <button 
-                    disabled={isSubmitting} 
+                    disabled={isSubmitting || !bookingData.consent} 
                     type="submit" 
                     className="w-full shadow-xl py-6 flex items-center justify-center gap-4 disabled:opacity-70 disabled:cursor-wait bg-brand-charcoal text-white rounded-xl hover:bg-brand-gold transition-colors font-black tracking-widest uppercase text-xs"
                   >
                     {isSubmitting ? (
-                      <><Loader2 size={18} className="animate-spin" /> Confirming Reservation...</>
+                      <><Loader2 size={18} className="animate-spin" /> Processing...</>
                     ) : (
-                      <><Check size={18} /> Secure My Appointment</>
+                      <><Check size={18} /> Confirm & Proceed to Payment</>
                     )}
                   </button>
                 </form>
@@ -570,7 +661,7 @@ export default function Booking() {
                     </motion.div>
                   )}
 
-                  {/* OPTION B: Manual EFT Flow */}
+                  {/* OPTION B: Manual EFT Flow - UPDATED WITH STANDARD BANK DETAILS */}
                   {paymentMethod === 'eft' && (
                     <motion.div 
                       key="eft"
@@ -587,18 +678,22 @@ export default function Booking() {
                       <div className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-black/5 mb-6">
                         <div className="flex justify-between items-center border-b border-black/5 pb-3">
                           <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Bank</span>
-                          <span className="font-black text-brand-charcoal">Capitec Bank</span>
+                          <span className="font-black text-brand-charcoal">Standard Bank</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-black/5 pb-3">
-                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Account</span>
-                          <span className="font-black text-brand-charcoal">DnG Beauty</span>
+                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Account Name</span>
+                          <span className="font-black text-brand-charcoal">GABRIELLE</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Branch Code</span>
+                          <span className="font-black text-brand-charcoal">00051001</span>
                         </div>
                         <div className="flex justify-between items-center pb-1">
                           <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Acc No.</span>
                           <div className="flex items-center gap-3">
-                            <span className="font-black text-brand-charcoal text-lg tracking-wider">1234567890</span>
+                            <span className="font-black text-brand-charcoal text-lg tracking-wider">10235609216</span>
                             <button 
-                              onClick={() => { navigator.clipboard.writeText("1234567890"); alert("Copied!"); }}
+                              onClick={() => { navigator.clipboard.writeText("10235609216"); alert("Account Number Copied!"); }}
                               className="text-[10px] font-black uppercase tracking-widest bg-brand-charcoal/10 text-brand-charcoal px-3 py-1 rounded-full hover:bg-brand-charcoal hover:text-white transition-colors"
                             >
                               Copy

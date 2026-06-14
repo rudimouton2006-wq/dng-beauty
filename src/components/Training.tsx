@@ -5,41 +5,39 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, CheckCircle2, Award, BookOpen, Briefcase } from "lucide-react";
+import { ArrowRight, CheckCircle2, Award, BookOpen, Briefcase, Scissors, UserCheck, AlertCircle } from "lucide-react";
 
 interface TrainingProps {
   setPage: (page: string) => void;
 }
 
-// Static Data extracted to prevent memory reallocation on scroll
-const CURRICULUM = [
-  {
-    day: "Day 01",
-    title: "The Foundation & Architecture",
-    topics: [
-      "Anatomy of the natural lash and eye styling.",
-      "Health, safety, and workspace sanitation.",
-      "Adhesive science and perfect retention ratios.",
-      "Isolation mastery and directional placement."
-    ]
-  },
-  {
-    day: "Day 02",
-    title: "Volume Mastery & Business",
-    topics: [
-      "Handmaking flawless volume fans (2D - 6D).",
-      "Wrapping techniques for seamless bonds.",
-      "Live model practical application.",
-      "Pricing, marketing, and client photography."
-    ]
-  }
+// Extracted exact data from Gabby's WhatsApp message
+const WHAT_YOULL_LEARN = [
+  "Lash theory & safety",
+  "Sanitation & hygiene",
+  "Lash mapping",
+  "Proper isolation",
+  "Classic application technique",
+  "Adhesive knowledge",
+  "Client consultation",
+  "Aftercare instructions",
+  "Lash fills & removals",
+  "Pricing & business fundamentals"
+];
+
+const WHAT_TO_BRING = [
+  "Notebook & pen",
+  "Professional, comfortable attire",
+  "A live model (on Day 2)"
 ];
 
 const INCLUSIONS = [
-  { icon: Briefcase, text: "Comprehensive Starter Kit (Value R1,500)" },
-  { icon: BookOpen, text: "In-depth DnG Training Manual" },
-  { icon: Award, text: "Official Certificate of Completion" },
-  { icon: CheckCircle2, text: "Ongoing Mentorship & WhatsApp Support" }
+  { icon: BookOpen, text: "Full Training Manual" },
+  { icon: Briefcase, text: "Comprehensive Lash Kit" },
+  { icon: Scissors, text: "Hands-On Training" },
+  { icon: UserCheck, text: "Live Model Practice" },
+  { icon: Award, text: "Certificate of Completion" },
+  { icon: CheckCircle2, text: "Business & Beginner Tips" }
 ];
 
 // GPU-accelerated animation variants
@@ -55,7 +53,7 @@ const staggerContainer = {
 
 const Training = memo(function Training({ setPage }: TrainingProps) {
   return (
-    <main className="bg-white min-h-screen font-sans text-brand-charcoal pt-32 pb-20">
+    <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] pt-32 pb-20">
       
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 lg:px-20 mb-32">
@@ -65,69 +63,111 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
             style={{ willChange: "opacity, transform" }}
         >
             <div className="w-full lg:w-1/2">
-                <span className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 block">DnG Academy</span>
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-8 leading-[1.1]">
-                    Master the art. <br/> Build an empire.
+                <span className="text-xs tracking-widest uppercase font-black text-gray-500 mb-6 block">Gabrielle Lashes Academy</span>
+                <h1 className="text-5xl md:text-7xl font-light tracking-tighter mb-8 leading-[1.1] uppercase">
+                    Master the Art. <br/> Build Your Empire.
                 </h1>
-                <p className="text-brand-charcoal/70 text-lg font-medium leading-relaxed mb-10">
-                    Our intensive 2-Day Masterclass is designed to take you from a complete beginner to a confident, practicing lash artist. We don't just teach application; we teach the architecture of a successful beauty business.
+                <p className="text-gray-700 text-lg font-medium leading-relaxed mb-10 tracking-wide">
+                    This is a 2-day, 8-hour hands-on training designed to give you the knowledge, confidence, and skills to begin your lash career.
                 </p>
-                <div className="flex items-center gap-6">
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8">
                     <button 
                         onClick={() => setPage("booking")}
-                        className="px-10 py-5 bg-brand-charcoal text-white font-black tracking-widest uppercase text-xs hover:bg-brand-gold transition-colors duration-300 shadow-xl flex items-center gap-3"
+                        className="px-10 py-5 bg-[#1A1A1A] text-white font-black tracking-widest uppercase text-xs hover:bg-gray-800 transition-colors duration-300 shadow-sm flex items-center gap-3 rounded-sm"
                     >
                         Secure Your Seat <ArrowRight size={16} />
                     </button>
-                    <span className="text-2xl font-black text-brand-gold">R3,000</span>
+                </div>
+
+                {/* Course Schedule Snippet */}
+                <div className="flex items-center gap-4 text-sm font-bold uppercase tracking-widest text-gray-500 border-l-2 border-[#1A1A1A] pl-4">
+                    <span>Day 1: 4 Hours</span>
+                    <span className="w-1.5 h-1.5 bg-gray-300 rounded-full"></span>
+                    <span>Day 2: 4 Hours</span>
                 </div>
             </div>
 
             <div className="w-full lg:w-1/2 relative">
-                <div className="absolute inset-0 bg-brand-gold/5 transform translate-x-4 translate-y-4 rounded-3xl -z-10"></div>
+                <div className="absolute inset-0 bg-gray-200 transform translate-x-4 translate-y-4 rounded-sm -z-10"></div>
                 <img 
-                    src="https://images.unsplash.com/photo-1559564484-e48b3e040ff4?auto=format&fit=crop&q=80&w=800" 
+                    src="/images/hero-welcome.jpg" 
                     alt="Lash Training Masterclass"
                     decoding="async"
                     loading="lazy"
-                    className="w-full h-[500px] object-cover rounded-3xl shadow-2xl relative z-10"
+                    className="w-full h-[600px] object-cover object-top rounded-sm shadow-lg relative z-10"
                 />
             </div>
         </motion.div>
       </section>
 
       {/* Curriculum Section */}
-      <section className="bg-brand-light py-32 px-6 lg:px-20">
+      <section className="bg-white py-32 px-6 lg:px-20 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
             <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
                 className="text-center mb-20"
                 style={{ willChange: "opacity, transform" }}
             >
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-brand-charcoal mb-4">The Curriculum.</h2>
-                <p className="text-brand-charcoal/50 font-medium">A structured breakdown of your 2-day intensive.</p>
+                <h2 className="text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-4 uppercase">The Curriculum.</h2>
+                <p className="text-gray-500 font-medium tracking-wide">Everything you need to launch a successful lash business.</p>
             </motion.div>
 
             <div className="grid md:grid-cols-2 gap-12 mb-20">
-                {CURRICULUM.map((module) => (
+                {/* What You'll Learn */}
+                <motion.div 
+                    initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
+                    className="bg-[#FAF9F6] p-10 md:p-12 border border-gray-100 transition-colors shadow-sm rounded-sm"
+                    style={{ willChange: "opacity, transform" }}
+                >
+                    <span className="text-gray-400 font-black tracking-widest uppercase text-sm mb-4 block">Comprehensive Study</span>
+                    <h3 className="text-3xl font-light text-[#1A1A1A] mb-8 uppercase">What You'll Learn</h3>
+                    <ul className="space-y-4">
+                        {WHAT_YOULL_LEARN.map((topic, idx) => (
+                            <li key={idx} className="flex items-start gap-4 text-gray-700 font-medium tracking-wide">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] shrink-0 mt-2.5"></div>
+                                {topic}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.div>
+
+                <div className="space-y-12">
+                    {/* What To Bring */}
                     <motion.div 
-                        key={module.day}
                         initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
-                        className="bg-white p-10 md:p-12 border border-black/5 hover:border-brand-gold/30 transition-colors shadow-sm rounded-3xl"
+                        className="bg-white p-10 md:p-12 border border-gray-100 transition-colors shadow-sm rounded-sm"
                         style={{ willChange: "opacity, transform" }}
                     >
-                        <span className="text-brand-gold font-black tracking-widest uppercase text-sm mb-4 block">{module.day}</span>
-                        <h3 className="text-3xl font-black text-brand-charcoal mb-8">{module.title}</h3>
+                        <span className="text-gray-400 font-black tracking-widest uppercase text-sm mb-4 block">Preparation</span>
+                        <h3 className="text-3xl font-light text-[#1A1A1A] mb-8 uppercase">What To Bring</h3>
                         <ul className="space-y-4">
-                            {module.topics.map((topic, idx) => (
-                                <li key={idx} className="flex items-start gap-4 text-brand-charcoal/70 font-medium">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-gold shrink-0 mt-2"></div>
-                                    {topic}
+                            {WHAT_TO_BRING.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-4 text-gray-700 font-medium tracking-wide">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] shrink-0 mt-2.5"></div>
+                                    {item}
                                 </li>
                             ))}
                         </ul>
                     </motion.div>
-                ))}
+
+                    {/* Booking & Deposit Policy */}
+                    <motion.div 
+                        initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
+                        className="bg-orange-50 p-10 md:p-12 border border-orange-100 shadow-sm rounded-sm"
+                        style={{ willChange: "opacity, transform" }}
+                    >
+                        <div className="flex items-center gap-3 mb-6">
+                            <AlertCircle className="text-orange-500" size={24} />
+                            <h3 className="text-2xl font-light text-[#1A1A1A] uppercase">Booking & Deposit</h3>
+                        </div>
+                        <p className="text-gray-700 font-medium tracking-wide leading-relaxed">
+                            A non-refundable deposit is required to secure your spot. The remaining balance is due before or on the first day of training. 
+                            <br/><br/>
+                            Please send your desired training date when inquiring, as spots are limited and booked on a first-come, first-served basis. Your seat is officially secured once your deposit is received.
+                        </p>
+                    </motion.div>
+                </div>
             </div>
 
             {/* Inclusions Grid */}
@@ -136,18 +176,18 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: "-50px" }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-6"
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
             >
                 {INCLUSIONS.map((item, idx) => (
                     <motion.div 
                         key={idx} variants={fadeUp}
-                        className="bg-white border border-black/5 p-8 text-center flex flex-col items-center justify-center gap-4 rounded-2xl shadow-sm"
+                        className="bg-[#FAF9F6] border border-gray-100 p-8 text-center flex flex-col items-center justify-center gap-4 rounded-sm shadow-sm hover:shadow-md transition-shadow"
                         style={{ willChange: "opacity, transform" }}
                     >
-                        <div className="w-12 h-12 bg-brand-gold/10 text-brand-gold rounded-full flex items-center justify-center">
-                            <item.icon size={24} />
+                        <div className="w-12 h-12 bg-white border border-gray-100 text-[#1A1A1A] rounded-full flex items-center justify-center shadow-sm">
+                            <item.icon size={20} />
                         </div>
-                        <p className="text-xs font-black uppercase tracking-widest text-brand-charcoal leading-relaxed">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 leading-relaxed">
                             {item.text}
                         </p>
                     </motion.div>

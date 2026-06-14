@@ -6,22 +6,23 @@
  @import "tailwindcss";
 
  @theme {
-   /* OVERRIDE: This turns the default Tailwind "white" into a beautiful Off-White/Cream globally */
+   /* OVERRIDE: This sets the global background to Gabby's exact Cream */
    --color-white: #FAF9F6; 
    
-   /* Your specific brand colors */
-   --color-brand-gold: #6b543c;
-   --color-brand-charcoal: #0a0a0a;
+   /* OVERRIDE: Matches the luxury dark text we used in Home and Footer */
+   --color-brand-charcoal: #1A1A1A;
    
-   /* A slightly darker latte color for contrast sections */
+   /* Kept your existing brand colors for accents/hover states */
+   --color-brand-gold: #6b543c;
    --color-brand-light: #F5F2EB;
  }
  
- /* Global resets to force the cream background everywhere */
+ /* Global resets to force the cream background and dark text everywhere */
  body {
    background-color: var(--color-white); 
    color: var(--color-brand-charcoal);
    -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
    scroll-behavior: smooth;
  }
  
