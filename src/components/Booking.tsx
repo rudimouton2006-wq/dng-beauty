@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Building2, Clock } from "lucide-react";
+import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Building2, Clock, ClipboardList } from "lucide-react";
 import { db, handleFirestoreError } from "../lib/firebase";
 import type { OperationType } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
@@ -21,7 +21,7 @@ interface Service {
   isMasterclass?: boolean;
 }
 
-// Updated with the exact services and local images from Phase 1
+// Flat, memory-efficient data using your local images
 const SERVICES: Service[] = [
   { id: "c-ext", name: "Classic Extensions", price: "R350", category: "Extensions", img: "/images/classic-extensions.jpg", duration: "90 min" },
   { id: "h-ext", name: "Hybrid Extensions", price: "R400", category: "Extensions", img: "/images/hybrid-extensions.jpg", duration: "105 min" },
@@ -34,7 +34,6 @@ const SERVICES: Service[] = [
 export default function Booking() {
   const [step, setStep] = useState(1);
   
-  // Phase 3: Added all Consultation Form parameters to state
   const [bookingData, setBookingData] = useState({
     serviceId: "",
     serviceName: "",
@@ -51,18 +50,17 @@ export default function Booking() {
     totalPrice: 0,
   });
   
-  // Anti-Overlap State
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isCheckingSlots, setIsCheckingSlots] = useState(false);
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<'eft' | 'gateway'>('gateway');
 
+  // Minimalist, lightning-fast animations
   const fadeUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
-    exit: { opacity: 0, y: -20, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.3 } }
   };
 
   const selectedServiceObj = SERVICES.find(s => s.id === bookingData.serviceId);
@@ -133,7 +131,7 @@ export default function Booking() {
 
     if (!bookingData.customerName.trim()) return "Please enter your full name.";
     if (!bookingData.customerEmail.trim() || !emailRegex.test(bookingData.customerEmail)) return "Please enter a valid email address.";
-    if (!bookingData.customerPhone.trim() || !phoneRegex.test(phoneClean)) return "Please enter a valid phone number (e.g., 082 123 4567).";
+    if (!bookingData.customerPhone.trim() || !phoneRegex.test(phoneClean)) return "Please enter a valid phone number.";
     if (!bookingData.consent) return "You must agree to the terms and conditions.";
     
     return "";
@@ -215,21 +213,15 @@ export default function Booking() {
     const startDate = new Date(year, month - 1, day, hour, minute);
     const endDate = new Date(startDate.getTime() + 90 * 60 * 1000);
 
-    const formatDate = (d: Date) => {
-      return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    };
+    const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
     const icsContent = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'BEGIN:VEVENT',
-      `DTSTART:${formatDate(startDate)}`,
-      `DTEND:${formatDate(endDate)}`,
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
+      `DTSTART:${formatDate(startDate)}`, `DTEND:${formatDate(endDate)}`,
       `SUMMARY:DnG Beauty: ${serviceName}`,
       `DESCRIPTION:Appointment for ${serviceName} at DnG Beauty Cape Town.`,
       'LOCATION:Cape Town, South Africa',
-      'END:VEVENT',
-      'END:VCALENDAR'
+      'END:VEVENT', 'END:VCALENDAR'
     ].join('\r\n');
 
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -241,97 +233,81 @@ export default function Booking() {
     link.click();
     document.body.removeChild(link);
   };
+
   return (
-    <div className="pt-40 pb-32 bg-white min-h-screen">
-      <div className="luxury-container">
+    <div className="pt-32 pb-32 bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-20">
         
-        {/* Header Section */}
-        <div className="max-w-4xl mx-auto text-center mb-24">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-          >
-            <span className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 block">Simple Booking</span>
-            <h1 className="text-6xl md:text-8xl font-black mb-10 leading-none">Ready?</h1>
-            <p className="text-brand-charcoal/80 text-xl font-medium max-w-lg mx-auto leading-relaxed">
-              Follow the simple steps below to secure your appointment. Our curated experience begins here.
+        {/* Minimalist Header Section */}
+        <div className="max-w-3xl mx-auto text-center mb-20">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
+            <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 mb-6 block">Reservation</span>
+            <h1 className="text-4xl md:text-6xl font-light tracking-tighter mb-6 uppercase">Secure Your Session.</h1>
+            <p className="text-gray-500 text-lg font-light max-w-md mx-auto leading-relaxed tracking-wide">
+              Follow the simple steps below to reserve your appointment.
             </p>
             
-            <div className="flex flex-col md:flex-row justify-center gap-6 mt-12">
+            <div className="flex justify-center mt-8">
                <button 
                  onClick={() => {
                    const msg = "Hi Gabby! I'd like to inquire about a booking at DnG Beauty.";
                    window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
                  }}
-                 className="flex items-center justify-center gap-4 bg-[#25D366] text-white px-10 py-5 text-xs tracking-widest uppercase font-black transition-all hover:opacity-90 shadow-lg rounded-lg"
-                 aria-label="Chat on WhatsApp directly"
+                 className="flex items-center justify-center gap-3 bg-transparent border border-gray-300 text-gray-500 hover:text-[#1A1A1A] hover:border-[#1A1A1A] px-8 py-3 text-[10px] tracking-widest uppercase font-bold transition-all rounded-sm"
                >
-                 <MessageSquare size={16} /> Chat on WhatsApp
+                 <MessageSquare size={14} /> Prefer WhatsApp?
                </button>
             </div>
           </motion.div>
         </div>
 
-        {/* Dynamic Stepper */}
-        <div className="max-w-3xl mx-auto mb-16" aria-label="Booking Progress">
-          <div className="flex items-center justify-between relative px-2">
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-100 -z-10 translate-y-[-50%]" />
-            {[1, 2, 3, 4].map((s) => (
-              <div 
-                key={s} 
-                className={`flex items-center justify-center w-12 h-12 rounded-full font-black text-sm transition-all duration-700 shadow-sm border-2 ${
-                  step >= s ? 'bg-brand-charcoal border-brand-charcoal text-white scale-110 shadow-xl' : 'bg-white border-gray-200 text-brand-charcoal/30'
-                }`}
-                aria-current={step === s ? "step" : undefined}
-              >
-                {step > s ? <Check size={18} strokeWidth={3} className="text-brand-gold" /> : s}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between mt-6 px-0">
-            <span className={`text-[10px] uppercase tracking-widest font-black transition-colors ${step >= 1 ? 'text-brand-charcoal' : 'text-brand-charcoal/30'}`}>Service</span>
-            <span className={`text-[10px] uppercase tracking-widest font-black transition-colors ${step >= 2 ? 'text-brand-charcoal' : 'text-brand-charcoal/30'}`}>Time</span>
-            <span className={`text-[10px] uppercase tracking-widest font-black transition-colors ${step >= 3 ? 'text-brand-charcoal' : 'text-brand-charcoal/30'}`}>Details</span>
-            <span className={`text-[10px] uppercase tracking-widest font-black transition-colors ${step >= 4 ? 'text-brand-charcoal' : 'text-brand-charcoal/30'}`}>Done</span>
-          </div>
+        {/* Minimalist Stepper */}
+        <div className="max-w-3xl mx-auto mb-16 border-b border-gray-200 pb-6 flex justify-between">
+            {['Service', 'Schedule', 'Consultation', 'Secure'].map((label, index) => {
+                const s = index + 1;
+                const isActive = step === s;
+                const isPast = step > s;
+                return (
+                    <div key={s} className="flex flex-col items-center gap-2">
+                        <div className={`text-[10px] font-black uppercase tracking-widest transition-colors ${isActive ? 'text-[#1A1A1A]' : isPast ? 'text-gray-400' : 'text-gray-300'}`}>
+                            {isPast ? <Check size={14} /> : `0${s}`}
+                        </div>
+                        <span className={`text-[9px] uppercase tracking-widest font-bold transition-colors hidden sm:block ${isActive ? 'text-[#1A1A1A]' : 'text-gray-400'}`}>
+                            {label}
+                        </span>
+                    </div>
+                );
+            })}
         </div>
 
         {/* Interactive Booking Container */}
-        <div className="max-w-3xl mx-auto bg-gray-50 border border-black/5 p-8 md:p-16 relative overflow-hidden rounded-3xl shadow-2xl">
+        <div className="max-w-3xl mx-auto relative min-h-[400px]">
           <AnimatePresence mode="wait">
             
             {/* STEP 1: Select Service */}
             {step === 1 && (
-              <motion.div key="step1" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-12">
-                <div className="flex justify-between items-end mb-10 border-b border-black/5 pb-8">
-                  <h2 className="text-4xl font-black">Step 1. <br /><span className="text-brand-charcoal/50 text-2xl font-black uppercase tracking-widest">Select Service</span></h2>
-                  <span className="text-brand-gold font-black text-xl">01 / 03</span>
-                </div>
-                <div className="grid gap-6">
+              <motion.div key="step1" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-8" style={{ willChange: "opacity, transform" }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {SERVICES.map((s) => (
                     <button 
                       key={s.id} 
                       onClick={() => handleServiceSelect(s)}
-                      className="w-full text-left flex items-center gap-6 group border border-transparent bg-white p-6 rounded-2xl hover:border-brand-gold/30 hover:shadow-xl transition-all duration-500"
-                      aria-label={`Select ${s.name} for ${s.price}`}
+                      className="w-full text-left flex items-center gap-4 group bg-white border border-gray-100 p-4 rounded-sm hover:border-gray-400 hover:shadow-sm transition-all duration-300"
                     >
-                      <div className="w-24 h-24 overflow-hidden rounded-xl shadow-inner bg-gray-100 hidden sm:block">
+                      <div className="w-20 h-24 overflow-hidden rounded-sm bg-gray-50 shrink-0 hidden sm:block">
                         <img 
                           src={s.img} 
                           alt={s.name} 
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
-                          loading="lazy"
-                          decoding="async"
-                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                          loading="lazy" decoding="async"
                         />
                       </div>
                       <div className="flex-grow">
-                        <span className="text-[10px] tracking-widest uppercase font-black text-brand-gold block mb-2">{s.category}</span>
-                        <h3 className="text-2xl font-black text-brand-charcoal group-hover:text-brand-gold transition-colors">{s.name}</h3>
-                        <span className="text-[10px] font-black text-brand-charcoal/40 uppercase tracking-widest">{s.duration}</span>
+                        <span className="text-[9px] tracking-widest uppercase font-bold text-gray-400 block mb-1">{s.category}</span>
+                        <h3 className="text-lg font-medium text-[#1A1A1A] group-hover:text-gray-600 transition-colors tracking-wide">{s.name}</h3>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-2"><Clock size={10} /> {s.duration}</span>
                       </div>
-                      <div className="text-3xl font-black text-brand-charcoal group-hover:text-brand-gold transition-colors">{s.price}</div>
+                      <div className="text-xl font-light text-[#1A1A1A] pr-2">{s.price}</div>
                     </button>
                   ))}
                 </div>
@@ -340,52 +316,41 @@ export default function Booking() {
 
             {/* STEP 2: Date and Time */}
             {step === 2 && (
-              <motion.div key="step2" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-12">
-                <button onClick={() => setStep(1)} className="text-xs tracking-widest uppercase font-black text-brand-charcoal/40 hover:text-brand-gold transition-colors mb-8 flex items-center gap-2">← Change Service</button>
-                <div className="flex justify-between items-end mb-10 border-b border-black/5 pb-8">
-                  <h2 className="text-4xl font-black">Step 2. <br /><span className="text-brand-charcoal/50 text-2xl font-black uppercase tracking-widest">Pick Time</span></h2>
-                  <span className="text-brand-gold font-black text-xl">02 / 03</span>
-                </div>
-                
-                <div className="bg-white p-6 rounded-2xl border border-black/5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm gap-4">
+              <motion.div key="step2" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-10" style={{ willChange: "opacity, transform" }}>
+                <div className="flex justify-between items-center bg-white p-6 rounded-sm border border-gray-100">
                    <div>
-                      <span className="text-[10px] tracking-widest uppercase font-black text-brand-gold block mb-1">Selected</span>
-                      <h4 className="text-xl font-black">{bookingData.serviceName}</h4>
+                      <span className="text-[9px] tracking-widest uppercase font-bold text-gray-400 block mb-1">Selected</span>
+                      <h4 className="text-lg font-medium">{bookingData.serviceName}</h4>
                    </div>
-                   <div className="text-right">
-                      <span className="text-[10px] tracking-widest uppercase font-black text-brand-charcoal/50 block mb-1">Required Deposit</span>
-                      <span className="text-2xl font-black text-brand-gold">R{depositAmount}</span>
-                   </div>
+                   <button onClick={() => setStep(1)} className="text-[9px] tracking-widest uppercase font-bold text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-gray-300 hover:border-[#1A1A1A] pb-0.5">Edit</button>
                 </div>
 
-                <div className="space-y-10">
+                <div className="grid md:grid-cols-2 gap-10">
                   <div>
-                    <label htmlFor="date-picker" className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-4">Choose Date</label>
+                    <label htmlFor="date-picker" className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">1. Select Date</label>
                     <input 
-                      id="date-picker"
-                      type="date" 
-                      min={today}
-                      className="w-full p-6 border border-black/10 focus:border-brand-gold outline-none h-16 bg-white font-bold rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-brand-gold/10 cursor-pointer"
+                      id="date-picker" type="date" min={today}
+                      className="w-full p-4 border border-gray-200 outline-none h-14 bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
                       onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
                       value={bookingData.date}
                     />
                   </div>
                   <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal">Choose Time Slot</label>
-                      {isCheckingSlots && <Loader2 size={16} className="animate-spin text-brand-gold" />}
+                    <div className="flex items-center gap-3 mb-3">
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">2. Select Time</label>
+                      {isCheckingSlots && <Loader2 size={12} className="animate-spin text-gray-400" />}
                     </div>
                     
                     {isMasterclass && (
-                      <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                        <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={16} />
-                        <p className="text-xs font-bold text-amber-800 uppercase tracking-widest leading-relaxed">
-                          The 2-Day Masterclass requires a full day commitment. Time selection is locked to a 09:00 AM start.
+                      <div className="mb-4 p-3 border border-gray-200 bg-gray-50 rounded-sm flex items-start gap-2">
+                        <AlertCircle className="text-gray-500 shrink-0 mt-0.5" size={14} />
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                          Masterclasses require a 09:00 AM start.
                         </p>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       {timeSlots.map(t => {
                         const isTaken = bookedSlots.includes(t);
                         const isMasterclassLocked = isMasterclass && t !== "09:00";
@@ -393,15 +358,14 @@ export default function Booking() {
 
                         return (
                           <button 
-                            key={t}
-                            disabled={isDisabled}
+                            key={t} disabled={isDisabled}
                             onClick={() => setBookingData({...bookingData, time: t})}
-                            className={`py-5 text-sm font-black tracking-widest uppercase border-2 rounded-xl transition-all duration-300 disabled:cursor-not-allowed ${
+                            className={`py-4 text-[11px] font-bold tracking-widest uppercase border rounded-sm transition-all duration-300 ${
                               isTaken 
-                                ? 'bg-red-50 text-red-300 line-through border-red-100' 
+                                ? 'bg-gray-50 text-gray-300 line-through border-gray-100 cursor-not-allowed' 
                                 : bookingData.time === t 
-                                  ? 'bg-brand-charcoal text-white border-brand-charcoal shadow-lg scale-105' 
-                                  : 'bg-white border-black/5 text-brand-charcoal hover:border-brand-gold/30 hover:shadow-md disabled:bg-gray-100 disabled:opacity-30'
+                                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' 
+                                  : 'bg-white border-gray-200 text-[#1A1A1A] hover:border-gray-400 disabled:bg-gray-50 disabled:opacity-50'
                             }`}
                           >
                             {t}
@@ -409,85 +373,67 @@ export default function Booking() {
                         )
                       })}
                     </div>
-                    
-                    {bookedSlots.length > 0 && !isCheckingSlots && (
-                      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-[10px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1.5">
-                        <AlertCircle size={14} /> Crossed out times are already booked.
-                      </motion.p>
-                    )}
                   </div>
-                  <button 
-                    disabled={!bookingData.date || !bookingData.time}
-                    onClick={() => { setStep(3); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    className="minimal-btn w-full shadow-xl flex items-center justify-center gap-4 py-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-charcoal disabled:hover:scale-100 bg-brand-charcoal text-white font-black uppercase tracking-widest text-xs rounded-xl"
-                  >
-                    Continue to Consultation <ArrowRight size={18} />
-                  </button>
+                </div>
+
+                <div className="pt-6 border-t border-gray-100">
+                    <button 
+                        disabled={!bookingData.date || !bookingData.time}
+                        onClick={() => { setStep(3); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                        className="w-full flex items-center justify-between p-5 bg-[#1A1A1A] text-white font-bold uppercase tracking-widest text-[10px] rounded-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+                    >
+                        Continue to Consultation <ArrowRight size={14} />
+                    </button>
                 </div>
               </motion.div>
             )}
 
             {/* STEP 3: Client Details & Lash Consultation */}
             {step === 3 && (
-              <motion.div key="step3" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-12">
-                <button onClick={() => setStep(2)} className="text-xs tracking-widest uppercase font-black text-brand-charcoal/40 hover:text-brand-gold transition-colors mb-8 flex items-center gap-2">← Change Schedule</button>
-                <div className="flex justify-between items-end mb-10 border-b border-black/5 pb-8">
-                  <h2 className="text-4xl font-black">Step 3. <br /><span className="text-brand-charcoal/50 text-2xl font-black uppercase tracking-widest">Consultation</span></h2>
-                  <span className="text-brand-gold font-black text-xl">03 / 03</span>
-                </div>
+              <motion.div key="step3" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-10" style={{ willChange: "opacity, transform" }}>
                 
                 {submissionError && (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-5 bg-red-50 text-red-600 text-xs font-black uppercase tracking-widest rounded-xl border border-red-100 mb-8 flex items-center gap-4 shadow-sm">
-                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-                    {submissionError}
-                  </motion.div>
+                  <div className="p-4 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest rounded-sm border border-red-100 flex items-center gap-3">
+                    <AlertCircle size={14} /> {submissionError}
+                  </div>
                 )}
 
-                <form onSubmit={handleDetailsSubmit} className="space-y-8">
+                <form onSubmit={handleDetailsSubmit} className="space-y-10">
                   
                   {/* Basic Info */}
                   <div className="space-y-6">
+                    <h3 className="text-[10px] tracking-widest uppercase font-bold text-gray-400 border-b border-gray-200 pb-2">Personal Details</h3>
                     <input 
-                      required 
-                      disabled={isSubmitting}
-                      placeholder="Your Full Name" 
-                      className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
-                      value={bookingData.customerName} 
-                      onChange={(e) => setBookingData({...bookingData, customerName: e.target.value})} 
+                      required disabled={isSubmitting} placeholder="Full Name" 
+                      className="w-full p-4 border-b border-gray-200 outline-none bg-transparent font-medium focus:border-[#1A1A1A] transition-colors placeholder:text-gray-400 text-sm" 
+                      value={bookingData.customerName} onChange={(e) => setBookingData({...bookingData, customerName: e.target.value})} 
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <input 
-                        required 
-                        disabled={isSubmitting}
-                        type="email" 
-                        placeholder="Your Email Address" 
-                        className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
-                        value={bookingData.customerEmail} 
-                        onChange={(e) => setBookingData({...bookingData, customerEmail: e.target.value})} 
+                        required disabled={isSubmitting} type="email" placeholder="Email Address" 
+                        className="w-full p-4 border-b border-gray-200 outline-none bg-transparent font-medium focus:border-[#1A1A1A] transition-colors placeholder:text-gray-400 text-sm" 
+                        value={bookingData.customerEmail} onChange={(e) => setBookingData({...bookingData, customerEmail: e.target.value})} 
                       />
                       <input 
-                        required 
-                        disabled={isSubmitting}
-                        placeholder="Contact Number" 
-                        className="w-full p-6 border border-black/10 h-16 outline-none bg-white font-bold rounded-xl shadow-sm focus:border-brand-gold focus:ring-4 focus:ring-brand-gold/10 transition-all placeholder:text-brand-charcoal/30 disabled:opacity-50 disabled:bg-gray-50" 
-                        value={bookingData.customerPhone} 
-                        onChange={(e) => setBookingData({...bookingData, customerPhone: e.target.value})} 
+                        required disabled={isSubmitting} placeholder="Contact Number" 
+                        className="w-full p-4 border-b border-gray-200 outline-none bg-transparent font-medium focus:border-[#1A1A1A] transition-colors placeholder:text-gray-400 text-sm" 
+                        value={bookingData.customerPhone} onChange={(e) => setBookingData({...bookingData, customerPhone: e.target.value})} 
                       />
                     </div>
                   </div>
 
-                  {/* Phase 3 Consultation Form Fields */}
-                  <div className="bg-white p-6 md:p-8 rounded-2xl border border-black/5 shadow-sm space-y-6">
-                    <h3 className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 border-b border-black/5 pb-4">Lash Consultation Details</h3>
+                  {/* Consultation Form */}
+                  <div className="space-y-6">
+                    <h3 className="text-[10px] tracking-widest uppercase font-bold text-gray-400 border-b border-gray-200 pb-2 flex items-center gap-2">
+                        <ClipboardList size={12}/> Technical Requirements
+                    </h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Eye Shape</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Eye Shape</label>
                         <select 
-                          disabled={isSubmitting}
-                          value={bookingData.eyeShape}
-                          onChange={(e) => setBookingData({...bookingData, eyeShape: e.target.value})}
-                          className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors cursor-pointer"
+                          disabled={isSubmitting} value={bookingData.eyeShape} onChange={(e) => setBookingData({...bookingData, eyeShape: e.target.value})}
+                          className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
                         >
                           <option value="Almond">Almond</option>
                           <option value="Round">Round</option>
@@ -501,256 +447,147 @@ export default function Booking() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Desired Lash Style</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Preferred Mapping</label>
                         <select 
-                          disabled={isSubmitting}
-                          value={bookingData.lashStyle}
-                          onChange={(e) => setBookingData({...bookingData, lashStyle: e.target.value})}
-                          className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors cursor-pointer"
+                          disabled={isSubmitting} value={bookingData.preferredMapping} onChange={(e) => setBookingData({...bookingData, preferredMapping: e.target.value})}
+                          className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
                         >
-                          <option value="Classic">Classic Extensions</option>
-                          <option value="Hybrid">Hybrid Extensions</option>
-                          <option value="Volume">Volume Extensions</option>
-                          <option value="Lash Lift">Lash Lift</option>
+                          <option value="Cat Eye">Cat Eye</option>
+                          <option value="Doll Eye">Doll Eye</option>
+                          <option value="Open Eye">Open Eye</option>
+                          <option value="Squirrel Eye">Squirrel Eye</option>
+                          <option value="Recommend For Me">Recommend For Me</option>
                         </select>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Preferred Mapping</label>
-                      <select 
-                        disabled={isSubmitting}
-                        value={bookingData.preferredMapping}
-                        onChange={(e) => setBookingData({...bookingData, preferredMapping: e.target.value})}
-                        className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors cursor-pointer"
-                      >
-                        <option value="Cat Eye">Cat Eye</option>
-                        <option value="Doll Eye">Doll Eye</option>
-                        <option value="Open Eye">Open Eye</option>
-                        <option value="Squirrel Eye">Squirrel Eye</option>
-                        <option value="Recommend For Me">Recommend For Me</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-brand-charcoal mb-3">Any allergies or sensitivities?</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Allergies / Sensitivities</label>
                       <textarea 
-                        disabled={isSubmitting}
-                        rows={2}
-                        placeholder="Leave blank if none..."
-                        value={bookingData.allergies}
-                        onChange={(e) => setBookingData({...bookingData, allergies: e.target.value})}
-                        className="w-full p-4 border border-black/10 outline-none bg-gray-50 font-bold rounded-xl focus:border-brand-gold focus:bg-white transition-colors resize-none placeholder:text-brand-charcoal/30"
+                        disabled={isSubmitting} rows={2} placeholder="Leave blank if none..." value={bookingData.allergies} onChange={(e) => setBookingData({...bookingData, allergies: e.target.value})}
+                        className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors resize-none placeholder:text-gray-300 text-sm"
                       />
                     </div>
 
                     <div className="flex items-start gap-4 pt-4">
                       <input 
-                        type="checkbox" 
-                        id="consent"
-                        required
-                        disabled={isSubmitting}
-                        checked={bookingData.consent}
-                        onChange={(e) => setBookingData({...bookingData, consent: e.target.checked})}
-                        className="mt-1 w-5 h-5 accent-brand-charcoal cursor-pointer"
+                        type="checkbox" id="consent" required disabled={isSubmitting} checked={bookingData.consent} onChange={(e) => setBookingData({...bookingData, consent: e.target.checked})}
+                        className="mt-1 w-4 h-4 accent-[#1A1A1A] cursor-pointer"
                       />
-                      <label htmlFor="consent" className="text-xs font-bold leading-relaxed text-brand-charcoal/70 cursor-pointer">
-                        I agree to the terms and conditions, and I confirm the above consultation details are accurate.
+                      <label htmlFor="consent" className="text-[11px] font-bold uppercase tracking-widest leading-relaxed text-gray-500 cursor-pointer">
+                        I confirm the above details are accurate & agree to studio terms.
                       </label>
                     </div>
                   </div>
                   
-                  {/* Digital Receipt / Summary */}
-                  <div className="p-8 bg-brand-gold/5 rounded-2xl border border-brand-gold/20 space-y-4 shadow-inner relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/10 rounded-full blur-3xl" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold border-b border-brand-gold/20 pb-4 mb-4 relative z-10">Appointment Summary</p>
-                    <div className="flex justify-between items-start relative z-10">
-                      <div>
-                        <p className="text-2xl font-black text-brand-charcoal leading-none mb-3">{bookingData.serviceName}</p>
-                        <p className="text-sm font-black text-brand-charcoal uppercase tracking-widest flex items-center gap-2 mb-4">
-                          <Calendar size={14} className="text-brand-gold"/> {bookingData.date} @ {bookingData.time}
-                        </p>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-charcoal/50">Deposit to Secure</p>
-                      </div>
-                      <div className="text-4xl font-black text-brand-gold">R{depositAmount}</div>
-                    </div>
+                  <div className="flex gap-4 pt-6 border-t border-gray-100">
+                    <button type="button" onClick={() => setStep(2)} className="px-6 py-5 bg-transparent border border-gray-200 text-gray-500 font-bold uppercase tracking-widest text-[10px] rounded-sm hover:border-gray-400 transition-colors">
+                        Back
+                    </button>
+                    <button disabled={isSubmitting || !bookingData.consent} type="submit" className="flex-1 flex items-center justify-center gap-3 bg-[#1A1A1A] text-white rounded-sm hover:bg-gray-800 transition-colors font-bold tracking-widest uppercase text-[10px] disabled:opacity-50">
+                        {isSubmitting ? <><Loader2 size={14} className="animate-spin" /> Processing</> : 'Confirm Details'}
+                    </button>
                   </div>
-
-                  <button 
-                    disabled={isSubmitting || !bookingData.consent} 
-                    type="submit" 
-                    className="w-full shadow-xl py-6 flex items-center justify-center gap-4 disabled:opacity-70 disabled:cursor-wait bg-brand-charcoal text-white rounded-xl hover:bg-brand-gold transition-colors font-black tracking-widest uppercase text-xs"
-                  >
-                    {isSubmitting ? (
-                      <><Loader2 size={18} className="animate-spin" /> Processing...</>
-                    ) : (
-                      <><Check size={18} /> Confirm & Proceed to Payment</>
-                    )}
-                  </button>
                 </form>
               </motion.div>
             )}
 
-            {/* STEP 4: Success & Dual Payment Options */}
+            {/* STEP 4: Success & Payment Options */}
             {step === 4 && (
-              <motion.div 
-                key="step4" 
-                initial={{ opacity: 0, scale: 0.95 }} 
-                animate={{ opacity: 1, scale: 1 }} 
-                className="text-center py-10"
-              >
-                <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-orange-100">
-                   <motion.div
-                     initial={{ scale: 0 }}
-                     animate={{ scale: 1 }}
-                     transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-                   >
-                     <AlertCircle className="text-orange-500" size={40} strokeWidth={3} />
-                   </motion.div>
+              <motion.div key="step4" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6" style={{ willChange: "opacity, transform" }}>
+                <div className="w-16 h-16 border border-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                   <AlertCircle className="text-[#1A1A1A]" size={24} strokeWidth={1} />
                 </div>
-                <h2 className="text-4xl md:text-5xl font-black mb-4 text-brand-charcoal">Action Required</h2>
+                <h2 className="text-3xl font-light mb-4 text-[#1A1A1A] uppercase tracking-wide">Action Required</h2>
                 
-                <div className="bg-orange-50/50 border border-orange-200 p-4 rounded-xl mb-8 max-w-md mx-auto">
-                  <p className="text-orange-800 font-bold text-sm">
-                    Your spot is reserved, but <strong className="font-black uppercase tracking-wider underline">not yet secured</strong>.
-                  </p>
-                </div>
-
-                <p className="text-brand-charcoal/70 font-medium mb-12 max-w-md mx-auto leading-relaxed">
-                  We have logged your details. To permanently lock in your placement on the calendar, the <strong className="text-brand-gold font-black">R{depositAmount}</strong> deposit must be paid now.
+                <p className="text-gray-500 font-light mb-10 max-w-sm mx-auto leading-relaxed text-sm">
+                  Your details are logged. To officially secure your session, the <strong className="font-bold text-[#1A1A1A]">R{depositAmount}</strong> deposit is required.
                 </p>
 
-                {/* Payment Method Toggle */}
-                <div className="flex bg-gray-100 p-1.5 rounded-xl mb-8 relative">
-                  <button 
-                    onClick={() => setPaymentMethod('gateway')}
-                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-all duration-300 ${paymentMethod === 'gateway' ? 'bg-white shadow-md text-brand-charcoal' : 'text-brand-charcoal/50 hover:text-brand-charcoal'}`}
-                  >
-                    <CreditCard size={16} /> Pay Online
+                <div className="flex bg-gray-50 p-1 rounded-sm mb-10 border border-gray-200">
+                  <button onClick={() => setPaymentMethod('gateway')} className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'gateway' ? 'bg-white shadow-sm border border-gray-100 text-[#1A1A1A]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
+                    Card / Online
                   </button>
-                  <button 
-                    onClick={() => setPaymentMethod('eft')}
-                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 transition-all duration-300 ${paymentMethod === 'eft' ? 'bg-white shadow-md text-brand-charcoal' : 'text-brand-charcoal/50 hover:text-brand-charcoal'}`}
-                  >
-                    <Building2 size={16} /> Manual EFT
+                  <button onClick={() => setPaymentMethod('eft')} className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'eft' ? 'bg-white shadow-sm border border-gray-100 text-[#1A1A1A]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
+                    Manual EFT
                   </button>
                 </div>
 
                 <AnimatePresence mode="wait">
-                  {/* OPTION A: Secure Gateway Flow */}
                   {paymentMethod === 'gateway' && (
-                    <motion.div 
-                      key="gateway"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                      className="bg-white border-2 border-brand-gold/30 p-8 rounded-3xl mb-8 shadow-lg text-left"
-                    >
-                      <h3 className="text-xl font-black text-brand-charcoal mb-4 flex items-center gap-3">
-                        <CreditCard className="text-brand-gold" /> Instant Confirmation
-                      </h3>
-                      <p className="text-sm font-medium text-brand-charcoal/70 mb-8 leading-relaxed">
-                        Pay securely using your credit, debit card, or instant EFT via our encrypted payment gateway. Your spot will be confirmed immediately.
-                      </p>
-                      <button 
-                        onClick={() => {
-                          window.open("https://pay.yoco.com/dng-beauty", "_blank");
-                        }}
-                        className="w-full py-5 bg-brand-charcoal text-white font-black tracking-widest uppercase text-xs hover:bg-brand-gold transition-colors rounded-xl shadow-lg flex items-center justify-center gap-3"
-                      >
-                        Pay R{depositAmount} Securely <ArrowRight size={16} />
+                    <motion.div key="gateway" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center border border-gray-200 p-8 rounded-sm">
+                      <CreditCard className="mx-auto mb-4 text-gray-300" size={32} strokeWidth={1} />
+                      <p className="text-sm font-light text-gray-500 mb-8 max-w-xs mx-auto">Pay securely using card or instant EFT via our encrypted gateway.</p>
+                      <button onClick={() => window.open("https://pay.yoco.com/dng-beauty", "_blank")} className="w-full py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm">
+                        Pay R{depositAmount} Securely
                       </button>
                     </motion.div>
                   )}
 
-                  {/* OPTION B: Manual EFT Flow - UPDATED WITH STANDARD BANK DETAILS */}
                   {paymentMethod === 'eft' && (
-                    <motion.div 
-                      key="eft"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                      className="bg-white border border-black/10 p-8 rounded-3xl mb-8 shadow-lg text-left"
-                    >
-                      <h3 className="text-xl font-black text-brand-charcoal mb-4 flex items-center gap-3">
-                        <Building2 className="text-brand-charcoal" /> Banking Details
-                      </h3>
-                      <p className="text-sm font-medium text-brand-charcoal/70 mb-6 leading-relaxed">
-                        Transfer the deposit using the details below. <strong className="text-brand-charcoal">Use your name as the reference.</strong>
-                      </p>
-                      
-                      <div className="space-y-4 bg-gray-50 p-6 rounded-2xl border border-black/5 mb-6">
-                        <div className="flex justify-between items-center border-b border-black/5 pb-3">
-                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Bank</span>
-                          <span className="font-black text-brand-charcoal">Standard Bank</span>
+                    <motion.div key="eft" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-left border border-gray-200 p-8 rounded-sm">
+                      <div className="space-y-4 mb-8">
+                        <div className="flex justify-between border-b border-gray-100 pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Bank</span>
+                          <span className="font-medium text-[#1A1A1A] text-sm">Standard Bank</span>
                         </div>
-                        <div className="flex justify-between items-center border-b border-black/5 pb-3">
-                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Account Name</span>
-                          <span className="font-black text-brand-charcoal">GABRIELLE</span>
+                        <div className="flex justify-between border-b border-gray-100 pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Name</span>
+                          <span className="font-medium text-[#1A1A1A] text-sm">GABRIELLE</span>
                         </div>
-                        <div className="flex justify-between items-center border-b border-black/5 pb-3">
-                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Branch Code</span>
-                          <span className="font-black text-brand-charcoal">00051001</span>
+                        <div className="flex justify-between border-b border-gray-100 pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Branch</span>
+                          <span className="font-medium text-[#1A1A1A] text-sm">00051001</span>
                         </div>
-                        <div className="flex justify-between items-center pb-1">
-                          <span className="text-xs font-bold uppercase tracking-widest text-brand-charcoal/50">Acc No.</span>
+                        <div className="flex justify-between items-center pt-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Account</span>
                           <div className="flex items-center gap-3">
-                            <span className="font-black text-brand-charcoal text-lg tracking-wider">10235609216</span>
-                            <button 
-                              onClick={() => { navigator.clipboard.writeText("10235609216"); alert("Account Number Copied!"); }}
-                              className="text-[10px] font-black uppercase tracking-widest bg-brand-charcoal/10 text-brand-charcoal px-3 py-1 rounded-full hover:bg-brand-charcoal hover:text-white transition-colors"
-                            >
+                            <span className="font-bold text-[#1A1A1A]">10235609216</span>
+                            <button onClick={() => { navigator.clipboard.writeText("10235609216"); alert("Copied!"); }} className="text-[9px] font-bold uppercase tracking-widest bg-gray-100 px-3 py-1.5 rounded-sm hover:bg-gray-200 transition-colors">
                               Copy
                             </button>
                           </div>
                         </div>
                       </div>
 
-                      <button 
-                        onClick={() => {
-                          const msg = `Hi Gabby! I have just booked ${bookingData.serviceName} for ${bookingData.date} at ${bookingData.time}. Here is my Proof of Payment for the R${depositAmount} deposit!`;
+                      <button onClick={() => {
+                          const msg = `Hi Gabby! I booked ${bookingData.serviceName} for ${bookingData.date} @ ${bookingData.time}. Here is my POP for the deposit!`;
                           window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
                         }} 
-                        className="w-full py-5 bg-[#25D366] text-white font-black tracking-widest uppercase text-xs hover:opacity-90 transition-opacity rounded-xl shadow-lg flex items-center justify-center gap-3"
+                        className="w-full py-4 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] hover:bg-[#1A1A1A] hover:text-white transition-colors rounded-sm flex items-center justify-center gap-2"
                       >
-                        <MessageSquare size={16} /> Send POP on WhatsApp
+                        <MessageSquare size={14} /> Send POP via WhatsApp
                       </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Add to Calendar Button (Always visible) */}
-                <button 
-                  onClick={addToCalendar} 
-                  className="w-full py-5 bg-transparent border border-black/10 text-brand-charcoal font-black tracking-widest uppercase text-xs hover:bg-gray-50 transition-colors rounded-xl flex items-center justify-center gap-3"
-                >
-                  <Calendar size={16} /> Add to Personal Calendar
+                <button onClick={addToCalendar} className="mt-8 text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-transparent hover:border-[#1A1A1A] pb-1 flex items-center justify-center gap-2 mx-auto">
+                  <Calendar size={12} /> Add to Personal Calendar
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Studio Info Section */}
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="mt-40 grid md:grid-cols-2 gap-20 border-t border-black/5 pt-32"
-        >
+        {/* Minimalist Studio Info Section */}
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="mt-32 grid md:grid-cols-2 gap-16 border-t border-gray-200 pt-20">
            <div>
-              <span className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 block">Our Rules</span>
-              <h3 className="text-4xl font-black mb-8">Things to know.</h3>
-              <div className="space-y-6 text-brand-charcoal/80 font-medium leading-relaxed">
-                 <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Please arrive with clean eyes and entirely free of makeup.</p>
-                 <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Cancellations must be made 48 hours prior to your scheduled time.</p>
-                 <p className="flex items-start gap-4"><span className="text-brand-gold mt-1">•</span> Cancellations made within 1 hour of the appointment forfeit the deposit.</p>
+              <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 mb-4 block">Our Rules</span>
+              <h3 className="text-2xl font-light mb-6 uppercase text-[#1A1A1A]">Studio Policy.</h3>
+              <div className="space-y-4 text-gray-500 font-light text-sm tracking-wide">
+                 <p className="flex items-start gap-3"><span className="text-[#1A1A1A] mt-1">—</span> Please arrive with clean eyes entirely free of makeup.</p>
+                 <p className="flex items-start gap-3"><span className="text-[#1A1A1A] mt-1">—</span> Cancellations must be made 48 hours prior to your schedule.</p>
+                 <p className="flex items-start gap-3"><span className="text-[#1A1A1A] mt-1">—</span> Cancellations within 1 hour forfeit the deposit entirely.</p>
               </div>
            </div>
            <div>
-              <span className="text-xs tracking-widest uppercase font-black text-brand-gold mb-6 block">Contact Us</span>
-              <h3 className="text-4xl font-black mb-8">Get in touch.</h3>
-              <div className="space-y-6 text-brand-charcoal/80 font-black">
-                 <a href="tel:+27787030732" className="flex items-center gap-4 hover:text-brand-gold transition-colors w-fit"><Phone size={18} className="text-brand-gold" /> +27 78 703 0732</a>
-                 <a href="https://www.instagram.com/dng_beauty_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 hover:text-brand-gold transition-colors w-fit"><Instagram size={18} className="text-brand-gold" /> @dng_beauty_</a>
-                 <div className="flex items-center gap-4 cursor-default"><MapPin size={18} className="text-brand-gold" /> Cape Town, ZA</div>
+              <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 mb-4 block">Contact Us</span>
+              <h3 className="text-2xl font-light mb-6 uppercase text-[#1A1A1A]">Get in touch.</h3>
+              <div className="space-y-4 text-gray-600 font-medium text-sm tracking-wide">
+                 <a href="tel:+27787030732" className="flex items-center gap-4 hover:text-[#1A1A1A] transition-colors w-fit"><Phone size={14} className="text-gray-400" /> +27 78 703 0732</a>
+                 <a href="https://www.instagram.com/dng_beauty_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 hover:text-[#1A1A1A] transition-colors w-fit"><Instagram size={14} className="text-gray-400" /> @dng_beauty_</a>
+                 <div className="flex items-center gap-4 cursor-default"><MapPin size={14} className="text-gray-400" /> Cape Town, ZA</div>
               </div>
            </div>
         </motion.div>
