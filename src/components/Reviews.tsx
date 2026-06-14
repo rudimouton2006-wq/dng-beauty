@@ -5,10 +5,10 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
-import { Star } from "lucide-react";
+import { Star, MessageCircle } from "lucide-react";
 
 // Static data moved OUTSIDE the component. 
-// Features the exact 6 real reviews from Gabby's Instagram DMs.
+// Features the exact 6 real reviews from Gabby's WhatsApp.
 const REVIEWS = [
   {
     id: 1,
@@ -110,7 +110,9 @@ const Reviews = memo(function Reviews() {
                     <div className="pt-6 border-t border-gray-100 flex justify-between items-end">
                         <div>
                             <h5 className="font-bold text-[#1A1A1A] tracking-tight uppercase text-sm">Verified Client</h5>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Instagram DM</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-[#25D366] flex items-center gap-1 mt-1">
+                                <MessageCircle size={12} /> WhatsApp Message
+                            </span>
                         </div>
                     </div>
                 </motion.div>
