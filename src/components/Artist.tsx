@@ -17,10 +17,6 @@ const fadeUp = {
 
 const Artist = memo(function Artist() {
   return (
-    {/* 
-      REDUCED BOTTOM PADDING (pb-16 instead of py-32) 
-      This eliminates the awkward gap and creates a seamless flow into the Reviews section!
-    */}
     <section className="pt-32 pb-16 px-6 lg:px-20 bg-[#FAF9F6] relative overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
         
@@ -36,7 +32,6 @@ const Artist = memo(function Artist() {
             <div className="absolute -inset-4 bg-gray-200 blur-2xl rounded-full z-0 opacity-50" style={{ transform: "translateZ(0)" }}></div>
             
             <div className="aspect-[4/5] relative z-10 overflow-hidden shadow-sm rounded-sm bg-gray-100">
-                {/* NEW IMAGE MAP: Close up applying lashes with tweezers */}
                 <img 
                     src="/images/applying-lashes.jpg" 
                     alt="Gabrielle Applying Lash Extensions"
@@ -79,7 +74,6 @@ const Artist = memo(function Artist() {
                 </p>
             </div>
 
-            {/* UPDATED STATS TO EXACTLY MATCH HER REQUEST */}
             <div className="mt-12 grid grid-cols-2 gap-8 pt-12 border-t border-gray-200">
                 <div>
                     <h4 className="text-4xl font-light tracking-tighter text-[#1A1A1A] mb-2">2+</h4>
