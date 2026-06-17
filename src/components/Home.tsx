@@ -48,69 +48,74 @@ const Home = memo(function Home({ setPage }: HomeProps) {
     <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-[#1A1A1A] selection:text-[#FAF9F6] relative overflow-x-hidden">
       
       {/* 
-        HERO SECTION - HIGH-END EDITORIAL LAYOUT 
-        Features a gradient fade on the image bottom, elegant serif typography, and a warm champagne glow.
+        HERO SECTION - THE MASTERPIECE LAYOUT
+        Features an elegant, static background watermark, pure luxury copy, 
+        and a complex radial mask to fade out the bottom-right corner flawlessly.
       */}
       <section className="relative min-h-[100vh] flex items-center pt-20 lg:pt-0 overflow-hidden bg-[#FAF9F6]">
         
-        {/* Luxury Background Elements */}
+        {/* Luxury Static Background Text */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
-            {/* Elegant Serif Watermark */}
-            <h1 className="text-[12vw] font-serif tracking-widest text-gray-200/50 leading-none uppercase whitespace-nowrap absolute top-[40%] lg:top-[50%] -translate-y-1/2">
-                Lash Architecture
+            <h1 className="text-[14vw] font-light tracking-[0.15em] text-gray-200/40 leading-none uppercase whitespace-nowrap absolute top-[45%] lg:top-[50%] -translate-y-1/2 select-none">
+                DNG BEAUTY
             </h1>
             
-            {/* Soft Champagne / Warm Blush Glow Accent */}
-            <div className="absolute top-[50%] lg:top-[60%] right-[-10%] lg:right-[10%] w-[80vw] lg:w-[40vw] h-[80vw] lg:h-[40vw] bg-gradient-to-tr from-[#E8D8CE]/60 to-[#F2EBE5]/40 rounded-full blur-[120px] mix-blend-multiply opacity-80 -translate-y-1/2"></div>
+            {/* Soft Warm Spotlight Glow */}
+            <div className="absolute top-[50%] right-[0%] w-[70vw] h-[70vw] bg-gradient-to-tr from-[#F2EBE5] to-[#E8D8CE]/50 rounded-full blur-[140px] mix-blend-multiply opacity-70 -translate-y-1/2"></div>
         </div>
 
         {/* Foreground Typography & CTA */}
-        <div className="relative z-20 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
+        <div className="relative z-20 w-full lg:w-[55%] flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
             <div className="flex items-center gap-4 mb-8">
-                <div className="w-8 h-[1px] bg-[#1A1A1A]"></div>
+                <div className="w-12 h-[1px] bg-[#1A1A1A]"></div>
                 <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-[10px]">
                     Lead Lash Tech: Gabrielle
                 </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-[7.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.85] mb-8 uppercase relative z-30 drop-shadow-sm">
-              DnG <br/> Beauty
+            <h1 className="text-5xl sm:text-6xl lg:text-[6.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-8 uppercase relative z-30 drop-shadow-sm">
+              The Art of <br/> <span className="font-medium">The Arch.</span>
             </h1>
             
-            <p className="text-gray-500 text-lg max-w-md font-light leading-relaxed mb-12 tracking-wide relative z-30 bg-[#FAF9F6]/40 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-3 lg:p-0 rounded-sm">
-              Luxury lash extensions perfectly tailored to the natural architecture of your eye shape.
-            </p>
+            <div className="text-gray-500 text-base lg:text-lg max-w-lg font-light leading-relaxed mb-12 tracking-wide relative z-30 bg-[#FAF9F6]/40 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-3 lg:p-0 rounded-sm space-y-4">
+              <p>
+                Experience lash extensions elevated to high art. 
+              </p>
+              <p>
+                We specialize in bespoke enhancements, meticulously mapping your natural eye architecture to craft a look of effortless luxury and uncompromising precision.
+              </p>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-start gap-4 relative z-30">
               <button 
                 onClick={() => setPage("booking")}
-                className="px-10 py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl"
+                className="px-10 py-5 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl rounded-sm"
               >
-                Start Consultation
+                Secure Your Booking
               </button>
               <button 
                 onClick={() => setPage("services")}
-                className="px-10 py-4 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 bg-[#FAF9F6]/80 backdrop-blur-md"
+                className="px-10 py-5 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 bg-[#FAF9F6]/80 backdrop-blur-md rounded-sm"
               >
-                View Menu <ArrowRight size={14} />
+                View Services <ArrowRight size={14} />
               </button>
             </div>
           </motion.div>
         </div>
 
         {/* 
-            Scaled-Up Transparent PNG Cutout with Feathered Gradient Fade 
-            The maskImage CSS makes the bottom 15% of her image fade seamlessly into the background!
+            Scaled-Up Transparent PNG Cutout with Radial Gradient Fade 
+            The radial mask ensures the top/left stays solid, while the bottom-right softly fades away!
         */}
         <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+            initial={{ opacity: 0, filter: "blur(10px)" }}
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            transition={{ duration: 1.4, ease: "easeOut", delay: 0.3 }}
             className="absolute bottom-0 right-[-15%] lg:right-[2%] w-[130%] lg:w-[55%] h-[70%] lg:h-[95%] z-10 pointer-events-none flex justify-center items-end"
             style={{ 
-                WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
-                maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' 
+                WebkitMaskImage: 'radial-gradient(ellipse 130% 110% at 20% 10%, black 50%, transparent 100%)',
+                maskImage: 'radial-gradient(ellipse 130% 110% at 20% 10%, black 50%, transparent 100%)' 
             }}
         >
             <img 
