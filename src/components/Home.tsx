@@ -48,23 +48,22 @@ const Home = memo(function Home({ setPage }: HomeProps) {
     <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-[#1A1A1A] selection:text-[#FAF9F6] relative overflow-x-hidden">
       
       {/* 
-        HERO SECTION - 100% RESPONSIVE
-        Uses svh for mobile browsers and distinct padding to separate text from the image on small screens.
+        HERO SECTION - FLAWLESSLY RESPONSIVE
+        Mobile: Flex-col stack (Text -> Image -> Buttons) preventing all overlap.
+        Desktop: Flex-row (Text Left, Image Right) maintaining the Vogue editorial look.
       */}
-      <section className="relative min-h-[100svh] flex items-center overflow-hidden bg-[#FAF9F6]">
+      <section className="relative min-h-[100svh] flex flex-col lg:flex-row overflow-hidden bg-[#FAF9F6]">
         
-        {/* Luxury Static Background Text (Scales beautifully on all devices) */}
+        {/* Luxury Static Background Text */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
-            <h1 className="text-[20vw] md:text-[16vw] lg:text-[14vw] font-light tracking-[0.15em] text-gray-200/40 leading-none uppercase whitespace-nowrap absolute top-[35%] lg:top-[50%] -translate-y-1/2 select-none">
+            <h1 className="text-[22vw] md:text-[16vw] lg:text-[14vw] font-light tracking-[0.15em] text-gray-200/60 leading-none uppercase whitespace-nowrap absolute top-[25%] lg:top-[50%] -translate-y-1/2 select-none">
                 DNG BEAUTY
             </h1>
-            
             <div className="absolute top-[40%] lg:top-[50%] right-[0%] w-[100vw] lg:w-[70vw] h-[100vw] lg:h-[70vw] bg-gradient-to-tr from-[#F2EBE5] to-[#E8D8CE]/50 rounded-full blur-[100px] lg:blur-[140px] mix-blend-multiply opacity-70 -translate-y-1/2"></div>
         </div>
 
-        {/* Foreground Typography & CTA */}
-        {/* pb-80 on mobile ensures the text doesn't overlap her face, lg:pb-0 resets it for laptops */}
-        <div className="relative z-30 w-full lg:w-[55%] flex flex-col justify-center px-6 sm:px-10 lg:px-20 pt-32 pb-80 lg:py-0">
+        {/* Foreground Typography */}
+        <div className="relative z-30 w-full lg:w-[55%] flex flex-col justify-center px-6 sm:px-10 lg:px-20 pt-28 sm:pt-32 lg:pt-0">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
             <div className="flex items-center gap-4 mb-6 lg:mb-8">
                 <div className="w-8 lg:w-12 h-[1px] bg-[#1A1A1A]"></div>
@@ -73,25 +72,26 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 </span>
             </div>
 
-            <h1 className="text-[3.5rem] sm:text-6xl lg:text-[6.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-6 lg:mb-8 uppercase drop-shadow-sm">
+            <h1 className="text-[3.5rem] sm:text-6xl lg:text-[6.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-6 lg:mb-8 uppercase drop-shadow-md lg:drop-shadow-sm">
               The Art of <br/> <span className="font-medium">The Arch.</span>
             </h1>
             
-            <div className="text-gray-600 lg:text-gray-500 text-sm sm:text-base lg:text-lg max-w-lg font-light leading-relaxed mb-10 lg:mb-12 tracking-wide bg-[#FAF9F6]/60 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 lg:p-0 rounded-sm space-y-4">
+            <div className="text-gray-600 lg:text-gray-500 text-sm sm:text-base lg:text-lg max-w-lg font-light leading-relaxed mb-6 lg:mb-12 tracking-wide space-y-4">
               <p>Experience lash extensions elevated to high art.</p>
               <p>We specialize in bespoke enhancements, meticulously mapping your natural eye architecture to craft a look of effortless luxury and uncompromising precision.</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4">
+            {/* DESKTOP BUTTONS - Hidden on Mobile */}
+            <div className="hidden lg:flex flex-row items-start gap-4 relative z-30">
               <button 
                 onClick={() => setPage("booking")}
-                className="w-full sm:w-auto px-10 py-5 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl rounded-sm"
+                className="px-10 py-5 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl rounded-sm"
               >
                 Secure Your Booking
               </button>
               <button 
                 onClick={() => setPage("services")}
-                className="w-full sm:w-auto px-10 py-5 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center justify-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 bg-[#FAF9F6]/80 backdrop-blur-md rounded-sm"
+                className="px-10 py-5 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center justify-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 backdrop-blur-md rounded-sm"
               >
                 View Services <ArrowRight size={14} />
               </button>
@@ -101,14 +101,14 @@ const Home = memo(function Home({ setPage }: HomeProps) {
 
         {/* 
             Responsive Image Cutout 
-            Mobile: Takes up bottom right, slightly wider so she fits cleanly.
-            Desktop: Scales to 55% width, beautiful radial fade.
+            Mobile: Takes up the middle, sitting below the text.
+            Desktop: Absolute positioning on the right side.
         */}
         <motion.div 
             initial={{ opacity: 0, filter: "blur(10px)" }}
             animate={{ opacity: 1, filter: "blur(0px)" }}
             transition={{ duration: 1.4, ease: "easeOut", delay: 0.3 }}
-            className="absolute bottom-0 right-[-15%] sm:right-[-5%] lg:right-[2%] w-[130%] sm:w-[80%] lg:w-[55%] h-[60%] sm:h-[70%] lg:h-[95%] z-20 pointer-events-none flex justify-center items-end"
+            className="relative lg:absolute bottom-0 lg:right-[2%] w-[140%] sm:w-[90%] lg:w-[55%] h-[45svh] sm:h-[50svh] lg:h-[95%] z-20 flex justify-center items-end self-center mt-auto lg:mt-0 pointer-events-none"
             style={{ 
                 WebkitMaskImage: 'radial-gradient(ellipse 130% 110% at 20% 10%, black 50%, transparent 100%)',
                 maskImage: 'radial-gradient(ellipse 130% 110% at 20% 10%, black 50%, transparent 100%)' 
@@ -122,9 +122,25 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 className="w-full h-full object-contain object-bottom drop-shadow-2xl"
             />
         </motion.div>
+
+        {/* MOBILE BUTTONS - Hidden on Desktop, positioned perfectly BELOW the image */}
+        <div className="flex lg:hidden flex-col sm:flex-row items-stretch gap-3 px-6 sm:px-10 w-full pb-10 pt-4 z-30 relative bg-gradient-to-t from-[#FAF9F6] via-[#FAF9F6] to-transparent">
+            <button 
+                onClick={() => setPage("booking")}
+                className="w-full py-5 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors shadow-2xl shadow-[#1A1A1A]/20 rounded-sm"
+            >
+                Secure Your Booking
+            </button>
+            <button 
+                onClick={() => setPage("services")}
+                className="w-full py-5 bg-white/90 border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center justify-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors shadow-lg rounded-sm"
+            >
+                View Services <ArrowRight size={14} />
+            </button>
+        </div>
       </section>
 
-      {/* ESSENTIALS GRID (Auto-collapses into 1 column on mobile, 3 on desktop) */}
+      {/* ESSENTIALS GRID */}
       <section className="py-20 lg:py-32 px-6 lg:px-20 bg-white relative z-20 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 lg:mb-20 gap-6 lg:gap-8">
@@ -182,7 +198,7 @@ const Home = memo(function Home({ setPage }: HomeProps) {
       <Artist />
       <Reviews />
 
-      {/* MASTERCLASS SECTION (Stacks vertically on mobile, aligns horizontally on desktop) */}
+      {/* MASTERCLASS SECTION */}
       <section className="py-20 lg:py-32 px-6 lg:px-20 bg-white border-t border-gray-100 relative z-20">
          <div className="max-w-7xl mx-auto">
             <motion.div 
@@ -210,11 +226,15 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                     </button>
                 </div>
                 
-                <div className="w-full lg:w-1/2 relative aspect-square sm:aspect-video lg:aspect-square bg-gray-100 rounded-sm overflow-hidden border border-gray-200">
+                {/* 
+                   FIXED IMAGE CROP 
+                   Changed mobile aspect ratio to [4/5] to give height, and used object-center to perfectly frame her body and face without awkwardly cutting off the top of her head.
+                */}
+                <div className="w-full lg:w-1/2 relative aspect-[4/5] sm:aspect-video lg:aspect-square bg-gray-100 rounded-sm overflow-hidden border border-gray-200">
                     <img 
                         src="/images/hero-welcome.jpg" 
                         alt="Masterclass Training"
-                        className="w-full h-full object-cover object-top"
+                        className="w-full h-full object-cover object-center"
                         loading="lazy"
                     />
                 </div>
