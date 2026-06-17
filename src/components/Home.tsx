@@ -48,55 +48,50 @@ const Home = memo(function Home({ setPage }: HomeProps) {
     <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-[#1A1A1A] selection:text-[#FAF9F6] relative overflow-x-hidden">
       
       {/* 
-        HERO SECTION - THE MASTERPIECE LAYOUT
-        Features an elegant, static background watermark, pure luxury copy, 
-        and a complex radial mask to fade out the bottom-right corner flawlessly.
+        HERO SECTION - 100% RESPONSIVE
+        Uses svh for mobile browsers and distinct padding to separate text from the image on small screens.
       */}
-      <section className="relative min-h-[100vh] flex items-center pt-20 lg:pt-0 overflow-hidden bg-[#FAF9F6]">
+      <section className="relative min-h-[100svh] flex items-center overflow-hidden bg-[#FAF9F6]">
         
-        {/* Luxury Static Background Text */}
+        {/* Luxury Static Background Text (Scales beautifully on all devices) */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
-            <h1 className="text-[14vw] font-light tracking-[0.15em] text-gray-200/40 leading-none uppercase whitespace-nowrap absolute top-[45%] lg:top-[50%] -translate-y-1/2 select-none">
+            <h1 className="text-[20vw] md:text-[16vw] lg:text-[14vw] font-light tracking-[0.15em] text-gray-200/40 leading-none uppercase whitespace-nowrap absolute top-[35%] lg:top-[50%] -translate-y-1/2 select-none">
                 DNG BEAUTY
             </h1>
             
-            {/* Soft Warm Spotlight Glow */}
-            <div className="absolute top-[50%] right-[0%] w-[70vw] h-[70vw] bg-gradient-to-tr from-[#F2EBE5] to-[#E8D8CE]/50 rounded-full blur-[140px] mix-blend-multiply opacity-70 -translate-y-1/2"></div>
+            <div className="absolute top-[40%] lg:top-[50%] right-[0%] w-[100vw] lg:w-[70vw] h-[100vw] lg:h-[70vw] bg-gradient-to-tr from-[#F2EBE5] to-[#E8D8CE]/50 rounded-full blur-[100px] lg:blur-[140px] mix-blend-multiply opacity-70 -translate-y-1/2"></div>
         </div>
 
         {/* Foreground Typography & CTA */}
-        <div className="relative z-20 w-full lg:w-[55%] flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
+        {/* pb-80 on mobile ensures the text doesn't overlap her face, lg:pb-0 resets it for laptops */}
+        <div className="relative z-30 w-full lg:w-[55%] flex flex-col justify-center px-6 sm:px-10 lg:px-20 pt-32 pb-80 lg:py-0">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
-            <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-[1px] bg-[#1A1A1A]"></div>
-                <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-[10px]">
+            <div className="flex items-center gap-4 mb-6 lg:mb-8">
+                <div className="w-8 lg:w-12 h-[1px] bg-[#1A1A1A]"></div>
+                <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-[9px] lg:text-[10px]">
                     Lead Lash Tech: Gabrielle
                 </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-[6.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-8 uppercase relative z-30 drop-shadow-sm">
+            <h1 className="text-[3.5rem] sm:text-6xl lg:text-[6.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-6 lg:mb-8 uppercase drop-shadow-sm">
               The Art of <br/> <span className="font-medium">The Arch.</span>
             </h1>
             
-            <div className="text-gray-500 text-base lg:text-lg max-w-lg font-light leading-relaxed mb-12 tracking-wide relative z-30 bg-[#FAF9F6]/40 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-3 lg:p-0 rounded-sm space-y-4">
-              <p>
-                Experience lash extensions elevated to high art. 
-              </p>
-              <p>
-                We specialize in bespoke enhancements, meticulously mapping your natural eye architecture to craft a look of effortless luxury and uncompromising precision.
-              </p>
+            <div className="text-gray-600 lg:text-gray-500 text-sm sm:text-base lg:text-lg max-w-lg font-light leading-relaxed mb-10 lg:mb-12 tracking-wide bg-[#FAF9F6]/60 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 lg:p-0 rounded-sm space-y-4">
+              <p>Experience lash extensions elevated to high art.</p>
+              <p>We specialize in bespoke enhancements, meticulously mapping your natural eye architecture to craft a look of effortless luxury and uncompromising precision.</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-start gap-4 relative z-30">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4">
               <button 
                 onClick={() => setPage("booking")}
-                className="px-10 py-5 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl rounded-sm"
+                className="w-full sm:w-auto px-10 py-5 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl rounded-sm"
               >
                 Secure Your Booking
               </button>
               <button 
                 onClick={() => setPage("services")}
-                className="px-10 py-5 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 bg-[#FAF9F6]/80 backdrop-blur-md rounded-sm"
+                className="w-full sm:w-auto px-10 py-5 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center justify-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 bg-[#FAF9F6]/80 backdrop-blur-md rounded-sm"
               >
                 View Services <ArrowRight size={14} />
               </button>
@@ -105,14 +100,15 @@ const Home = memo(function Home({ setPage }: HomeProps) {
         </div>
 
         {/* 
-            Scaled-Up Transparent PNG Cutout with Radial Gradient Fade 
-            The radial mask ensures the top/left stays solid, while the bottom-right softly fades away!
+            Responsive Image Cutout 
+            Mobile: Takes up bottom right, slightly wider so she fits cleanly.
+            Desktop: Scales to 55% width, beautiful radial fade.
         */}
         <motion.div 
             initial={{ opacity: 0, filter: "blur(10px)" }}
             animate={{ opacity: 1, filter: "blur(0px)" }}
             transition={{ duration: 1.4, ease: "easeOut", delay: 0.3 }}
-            className="absolute bottom-0 right-[-15%] lg:right-[2%] w-[130%] lg:w-[55%] h-[70%] lg:h-[95%] z-10 pointer-events-none flex justify-center items-end"
+            className="absolute bottom-0 right-[-15%] sm:right-[-5%] lg:right-[2%] w-[130%] sm:w-[80%] lg:w-[55%] h-[60%] sm:h-[70%] lg:h-[95%] z-20 pointer-events-none flex justify-center items-end"
             style={{ 
                 WebkitMaskImage: 'radial-gradient(ellipse 130% 110% at 20% 10%, black 50%, transparent 100%)',
                 maskImage: 'radial-gradient(ellipse 130% 110% at 20% 10%, black 50%, transparent 100%)' 
@@ -128,15 +124,15 @@ const Home = memo(function Home({ setPage }: HomeProps) {
         </motion.div>
       </section>
 
-      {/* ESSENTIALS GRID */}
-      <section className="py-32 px-6 lg:px-20 bg-white relative z-20 border-t border-gray-100">
+      {/* ESSENTIALS GRID (Auto-collapses into 1 column on mobile, 3 on desktop) */}
+      <section className="py-20 lg:py-32 px-6 lg:px-20 bg-white relative z-20 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 lg:mb-20 gap-6 lg:gap-8">
                 <div>
-                    <h2 className="text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-4 uppercase">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-4 uppercase">
                         The Essentials.
                     </h2>
-                    <p className="text-gray-400 font-light text-lg tracking-wide">
+                    <p className="text-gray-400 font-light text-base lg:text-lg tracking-wide">
                         Our most requested signature services.
                     </p>
                 </div>
@@ -186,35 +182,35 @@ const Home = memo(function Home({ setPage }: HomeProps) {
       <Artist />
       <Reviews />
 
-      {/* HIGHLY VISIBLE MASTERCLASS SECTION */}
-      <section className="py-32 px-6 lg:px-20 bg-white border-t border-gray-100 relative z-20">
+      {/* MASTERCLASS SECTION (Stacks vertically on mobile, aligns horizontally on desktop) */}
+      <section className="py-20 lg:py-32 px-6 lg:px-20 bg-white border-t border-gray-100 relative z-20">
          <div className="max-w-7xl mx-auto">
             <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
-                className="bg-[#FAF9F6] border border-gray-200 p-8 lg:p-16 rounded-sm flex flex-col lg:flex-row items-center gap-12 lg:gap-20"
+                className="bg-[#FAF9F6] border border-gray-200 p-6 sm:p-8 lg:p-16 rounded-sm flex flex-col lg:flex-row items-center gap-10 lg:gap-20"
             >
                 <div className="w-full lg:w-1/2">
                     <div className="flex items-center gap-3 mb-6">
-                        <GraduationCap className="text-[#1A1A1A]" size={24} strokeWidth={1.5} />
-                        <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 block">
+                        <GraduationCap className="text-[#1A1A1A]" size={20} lg:size={24} strokeWidth={1.5} />
+                        <span className="text-[9px] lg:text-[10px] tracking-widest uppercase font-bold text-gray-400 block">
                             Gabrielle Lashes Academy
                         </span>
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-6 uppercase leading-[1.1]">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-6 uppercase leading-[1.1]">
                         Master the Art. <br/> Build Your Empire.
                     </h2>
-                    <p className="text-gray-500 font-light text-lg tracking-wide leading-relaxed mb-8">
+                    <p className="text-gray-500 font-light text-sm sm:text-base lg:text-lg tracking-wide leading-relaxed mb-8">
                         Ready to launch your beauty business? Join our comprehensive 2-Day Lash Masterclass. Hands-on training, complete starter kits, and insider business strategies.
                     </p>
                     <button 
                         onClick={() => setPage("training")}
-                        className="pb-1 border-b border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] hover:text-gray-400 hover:border-gray-400 transition-colors flex items-center gap-2"
+                        className="pb-1 border-b border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[9px] lg:text-[10px] hover:text-gray-400 hover:border-gray-400 transition-colors flex items-center gap-2 w-fit"
                     >
                         View Full Curriculum <ArrowRight size={12} />
                     </button>
                 </div>
                 
-                <div className="w-full lg:w-1/2 relative aspect-video lg:aspect-square bg-gray-100 rounded-sm overflow-hidden border border-gray-200">
+                <div className="w-full lg:w-1/2 relative aspect-square sm:aspect-video lg:aspect-square bg-gray-100 rounded-sm overflow-hidden border border-gray-200">
                     <img 
                         src="/images/hero-welcome.jpg" 
                         alt="Masterclass Training"
@@ -227,14 +223,14 @@ const Home = memo(function Home({ setPage }: HomeProps) {
       </section>
 
       {/* FOOTER CTA */}
-      <section className="py-40 bg-[#1A1A1A] text-center px-4 relative overflow-hidden z-20">
+      <section className="py-24 lg:py-40 bg-[#1A1A1A] text-center px-6 relative overflow-hidden z-20">
         <div className="relative z-10">
-            <h2 className="text-white text-4xl md:text-6xl font-light tracking-tighter mb-12 uppercase">
+            <h2 className="text-white text-3xl sm:text-4xl md:text-6xl font-light tracking-tighter mb-10 lg:mb-12 uppercase leading-tight">
                 Ready for your <br/> transformation?
             </h2>
             <button 
                 onClick={() => setPage("booking")}
-                className="px-12 py-5 bg-[#FAF9F6] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] hover:bg-white transition-colors duration-300 rounded-sm"
+                className="w-full sm:w-auto px-12 py-5 bg-[#FAF9F6] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] hover:bg-white transition-colors duration-300 rounded-sm"
             >
                 Secure Your Spot
             </button>
