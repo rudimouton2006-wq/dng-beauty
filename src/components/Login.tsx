@@ -28,7 +28,7 @@ const Login = memo(function Login({ setPage }: LoginProps) {
 
     // Simulating a secure check so the UI feels physical and premium
     setTimeout(() => {
-      // NOTE: Hardcoded PIN for Gabby's simple studio setup.
+      // NOTE: Hardcoded PIN for Gabby's studio setup is confirmed as 2026.
       if (passcode === "2026") {
         setPage("dashboard");
       } else {

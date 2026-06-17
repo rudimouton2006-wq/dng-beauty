@@ -5,7 +5,7 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, GraduationCap } from "lucide-react";
 import Artist from "./Artist";
 import Reviews from "./Reviews";
 
@@ -13,7 +13,6 @@ interface HomeProps {
   setPage: (page: string) => void;
 }
 
-// Static data kept completely outside the component to prevent memory reallocation on re-renders
 const SERVICES = [
   { 
     title: "Classic Lashes", 
@@ -29,13 +28,12 @@ const SERVICES = [
   },
   { 
     title: "Brow Styling", 
-    price: "From R200", 
+    price: "From R50", 
     desc: "Sculpted perfection.",
-    img: "/images/brow-shape-tint.jpg" 
+    img: "/images/brow-shape.jpg" 
   }
 ];
 
-// GPU-accelerated variants for buttery-smooth DOM painting
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { 
@@ -50,29 +48,21 @@ const Home = memo(function Home({ setPage }: HomeProps) {
     <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-[#1A1A1A] selection:text-[#FAF9F6] relative overflow-x-hidden">
       
       {/* 
-        HERO SECTION 
-        Optimized for LCP (Largest Contentful Paint). 
-        Using an absolute img tag with fetchPriority ensures zero-lag loading above the fold.
+        HERO SECTION - SHEREE PAIGE MASTERY STYLE 
+        Features a transparent cutout layered over massive background text.
       */}
-      <section className="relative min-h-screen flex items-center pt-20 lg:pt-0 overflow-hidden">
-        <img 
-            src="/images/home-bg.jpg" 
-            alt="DnG Beauty Luxury Lashes"
-            fetchPriority="high"
-            loading="eager"
-            className="absolute inset-0 w-full h-full object-cover z-0 scale-105"
-        />
+      <section className="relative min-h-screen flex items-center pt-20 lg:pt-0 overflow-hidden bg-[#FAF9F6]">
         
-        {/* Minimalist Gradient Overlay */}
-        <div className="absolute inset-0 bg-[#FAF9F6]/90 lg:bg-transparent lg:bg-gradient-to-r lg:from-[#FAF9F6] lg:via-[#FAF9F6]/80 lg:to-transparent z-0"></div>
-        
-        <div className="relative z-10 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
-          <motion.div
-             initial="hidden"
-             animate="visible"
-             variants={fadeUp}
-             style={{ willChange: "opacity, transform" }}
-          >
+        {/* Decorative Giant Typography (Behind Gabby) */}
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 w-full z-0 px-6 overflow-hidden pointer-events-none select-none">
+            <h1 className="text-[15vw] font-black tracking-tighter text-gray-200 leading-[0.8] uppercase whitespace-nowrap opacity-40">
+               Mastery
+            </h1>
+        </div>
+
+        {/* Foreground Content */}
+        <div className="relative z-20 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
             <div className="flex items-center gap-4 mb-8">
                 <div className="w-8 h-[1px] bg-[#1A1A1A]"></div>
                 <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-[10px]">
@@ -80,36 +70,51 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-[8rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.85] mb-8 uppercase">
+            <h1 className="text-6xl sm:text-7xl lg:text-[7rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.85] mb-8 uppercase relative z-30">
               DnG <br/> Beauty
             </h1>
             
-            <p className="text-gray-500 text-lg max-w-md font-light leading-relaxed mb-12 tracking-wide">
+            <p className="text-gray-500 text-lg max-w-md font-light leading-relaxed mb-12 tracking-wide relative z-30 bg-[#FAF9F6]/50 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-2 lg:p-0 rounded-sm">
               Luxury lash extensions perfectly tailored to the natural architecture of your eye shape.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4 relative z-30">
               <button 
                 onClick={() => setPage("booking")}
-                className="px-10 py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300"
+                className="px-10 py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 shadow-xl"
               >
                 Start Consultation
               </button>
               <button 
                 onClick={() => setPage("services")}
-                className="px-10 py-4 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300"
+                className="px-10 py-4 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] flex items-center gap-3 hover:bg-[#1A1A1A] hover:text-white transition-colors duration-300 bg-[#FAF9F6]/80 backdrop-blur-md"
               >
                 View Menu <ArrowRight size={14} />
               </button>
             </div>
           </motion.div>
         </div>
+
+        {/* Transparent PNG Cutout (Layered over the text and background) */}
+        <motion.div 
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+            className="absolute bottom-0 right-[-10%] lg:right-10 w-[110%] lg:w-[45%] h-[60%] lg:h-[85%] z-10 pointer-events-none"
+        >
+            <img 
+                src="/images/gabby-cutout.png" 
+                alt="Gabby - Lead Lash Tech"
+                fetchPriority="high"
+                loading="eager"
+                className="w-full h-full object-contain object-bottom drop-shadow-2xl"
+            />
+        </motion.div>
       </section>
 
       {/* ESSENTIALS GRID */}
-      <section className="py-32 px-6 lg:px-20 bg-white relative z-10 border-t border-gray-100">
+      <section className="py-32 px-6 lg:px-20 bg-white relative z-20 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
-            
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
                 <div>
                     <h2 className="text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-4 uppercase">
@@ -159,16 +164,55 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 </motion.div>
               ))}
             </div>
-
         </div>
       </section>
 
-      {/* COMPONENT INTEGRATION */}
       <Artist />
       <Reviews />
 
+      {/* NEW: HIGHLY VISIBLE MASTERCLASS SECTION */}
+      <section className="py-32 px-6 lg:px-20 bg-white border-t border-gray-100 relative z-20">
+         <div className="max-w-7xl mx-auto">
+            <motion.div 
+                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+                className="bg-[#FAF9F6] border border-gray-200 p-8 lg:p-16 rounded-sm flex flex-col lg:flex-row items-center gap-12 lg:gap-20"
+            >
+                <div className="w-full lg:w-1/2">
+                    <div className="flex items-center gap-3 mb-6">
+                        <GraduationCap className="text-[#1A1A1A]" size={24} strokeWidth={1.5} />
+                        <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 block">
+                            Gabrielle Lashes Academy
+                        </span>
+                    </div>
+                    <h2 className="text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-6 uppercase leading-[1.1]">
+                        Master the Art. <br/> Build Your Empire.
+                    </h2>
+                    <p className="text-gray-500 font-light text-lg tracking-wide leading-relaxed mb-8">
+                        Ready to launch your beauty business? Join our comprehensive 2-Day Lash Masterclass. Hands-on training, complete starter kits, and insider business strategies.
+                    </p>
+                    <button 
+                        onClick={() => setPage("training")}
+                        className="pb-1 border-b border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] hover:text-gray-400 hover:border-gray-400 transition-colors flex items-center gap-2"
+                    >
+                        View Full Curriculum <ArrowRight size={12} />
+                    </button>
+                </div>
+                
+                {/* Visual Graphic for Masterclass */}
+                <div className="w-full lg:w-1/2 relative aspect-video lg:aspect-square bg-gray-100 rounded-sm overflow-hidden border border-gray-200">
+                    <img 
+                        src="/images/hero-welcome.jpg" 
+                        alt="Masterclass Training"
+                        className="w-full h-full object-cover object-top"
+                        loading="lazy"
+                    />
+                </div>
+            </motion.div>
+         </div>
+      </section>
+
       {/* FOOTER CTA */}
-      <section className="py-40 bg-[#1A1A1A] text-center px-4 relative overflow-hidden">
+      <section className="py-40 bg-[#1A1A1A] text-center px-4 relative overflow-hidden z-20">
         <div className="relative z-10">
             <h2 className="text-white text-4xl md:text-6xl font-light tracking-tighter mb-12 uppercase">
                 Ready for your <br/> transformation?

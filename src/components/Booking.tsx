@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Building2, Clock, ClipboardList } from "lucide-react";
+import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Clock, ClipboardList, Wallet } from "lucide-react";
 import { db, handleFirestoreError } from "../lib/firebase";
 import type { OperationType } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
@@ -16,23 +16,57 @@ interface Service {
   name: string;
   price: string;
   category: string;
-  img: string;
   duration: string;
   isMasterclass?: boolean;
 }
 
-// Flat, memory-efficient data using your local images
-const SERVICES: Service[] = [
-  { id: "c-ext", name: "Classic Extensions", price: "R350", category: "Extensions", img: "/images/classic-extensions.jpg", duration: "90 min" },
-  { id: "h-ext", name: "Hybrid Extensions", price: "R400", category: "Extensions", img: "/images/hybrid-extensions.jpg", duration: "105 min" },
-  { id: "v-ext", name: "Volume Extensions", price: "R450", category: "Extensions", img: "/images/volume-extensions.jpg", duration: "120 min" },
-  { id: "b-lam", name: "Brow Lamination", price: "R300", category: "Brows", img: "/images/brow-lamination.jpg", duration: "45 min" },
-  { id: "l-lift", name: "Lash Lift", price: "R350", category: "Lifts", img: "/images/lash-lift.jpg", duration: "60 min" },
-  { id: "m-class", name: "2-Day Lash Masterclass", price: "R3000", category: "Training", img: "/images/hero-welcome.jpg", duration: "2 Days", isMasterclass: true }
+// Completely updated and mapped to the official 2026 Price List
+const BOOKABLE_SERVICES: Service[] = [
+  // FULL SETS (Extensions)
+  { id: "ext-classics", name: "Classics - Full Set", price: "R350", category: "Full Sets", duration: "3 Hours" },
+  { id: "ext-classics-cat", name: "Classics - Cat Eye", price: "R380", category: "Full Sets", duration: "3 Hours" },
+  { id: "ext-mega", name: "Mega Classics - Full Set", price: "R370", category: "Full Sets", duration: "3 Hours" },
+  { id: "ext-hybrids", name: "Hybrids - Full Set", price: "R400", category: "Full Sets", duration: "3 Hours" },
+  { id: "ext-hybrids-cat", name: "Hybrids - Cat Eye", price: "R420", category: "Full Sets", duration: "3 Hours" },
+  { id: "ext-vol", name: "Volume - Full Set", price: "R450", category: "Full Sets", duration: "3 Hours" },
+  { id: "ext-wispy", name: "Wispy + Spikes - Full Set", price: "R500", category: "Full Sets", duration: "3 Hours" },
+
+  // FILLS (Extensions)
+  { id: "fill-classics-2", name: "Classics - 2-3 Wk Fill", price: "R250", category: "Fills", duration: "2 Hours" },
+  { id: "fill-classics-3", name: "Classics - 3-4 Wk Fill", price: "R300", category: "Fills", duration: "2 Hours" },
+  { id: "fill-mega-2", name: "Mega Classics - 2-3 Wk Fill", price: "R270", category: "Fills", duration: "2 Hours" },
+  { id: "fill-mega-3", name: "Mega Classics - 3-4 Wk Fill", price: "R300", category: "Fills", duration: "2 Hours" },
+  { id: "fill-hybrids-2", name: "Hybrids - 2-3 Wk Fill", price: "R300", category: "Fills", duration: "2 Hours" },
+  { id: "fill-hybrids-3", name: "Hybrids - 3-4 Wk Fill", price: "R350", category: "Fills", duration: "2 Hours" },
+  { id: "fill-vol-2", name: "Volume - 2-3 Wk Fill", price: "R350", category: "Fills", duration: "2 Hours" },
+  { id: "fill-vol-3", name: "Volume - 3-4 Wk Fill", price: "R400", category: "Fills", duration: "2 Hours" },
+  { id: "fill-wispy-2", name: "Wispy + Spikes - 2-3 Wk Fill", price: "R390", category: "Fills", duration: "2 Hours" },
+  { id: "fill-wispy-3", name: "Wispy + Spikes - 3-4 Wk Fill", price: "R400", category: "Fills", duration: "2 Hours" },
+
+  // CLUSTERS
+  { id: "clu-classics", name: "Clusters - Classics", price: "R150", category: "Clusters", duration: "30 Min" },
+  { id: "clu-classics-cat", name: "Clusters - Classic Cat Eye", price: "R160", category: "Clusters", duration: "30 Min" },
+  { id: "clu-hybrids", name: "Clusters - Hybrids", price: "R170", category: "Clusters", duration: "30 Min" },
+  { id: "clu-hybrids-cat", name: "Clusters - Hybrid Cat Eye", price: "R180", category: "Clusters", duration: "30 Min" },
+  { id: "clu-vol", name: "Clusters - Volume", price: "R200", category: "Clusters", duration: "30 Min" },
+  { id: "clu-vol-cat", name: "Clusters - Volume Cat Eye", price: "R220", category: "Clusters", duration: "30 Min" },
+  { id: "clu-wispy", name: "Clusters - Wispy Set", price: "R250", category: "Clusters", duration: "30 Min" },
+
+  // ADD-ONS
+  { id: "add-brow", name: "Brow Shape", price: "R50", category: "Add-Ons", duration: "30 Min" },
+  { id: "add-brow-tint", name: "Brow Shape + Tint", price: "R100", category: "Add-Ons", duration: "1 Hour" },
+  { id: "add-brow-lam", name: "Brow Lamination + Free Tint", price: "R300", category: "Add-Ons", duration: "45 Min" },
+  { id: "add-lash-lift", name: "Lash Lift", price: "R350", category: "Add-Ons", duration: "60 Min" },
+
+  // MASTERCLASS (Price successfully updated to R3500)
+  { id: "m-class", name: "2-Day Lash Masterclass", price: "R3500", category: "Training", duration: "2 Days", isMasterclass: true }
 ];
+
+const SERVICE_CATEGORIES = ["Full Sets", "Fills", "Clusters", "Add-Ons", "Training"];
 
 export default function Booking() {
   const [step, setStep] = useState(1);
+  const [activeTab, setActiveTab] = useState("Full Sets");
   
   const [bookingData, setBookingData] = useState({
     serviceId: "",
@@ -54,20 +88,19 @@ export default function Booking() {
   const [isCheckingSlots, setIsCheckingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<'eft' | 'gateway'>('gateway');
+  const [paymentMethod, setPaymentMethod] = useState<'gateway' | 'eft' | 'cash'>('gateway');
 
   // Minimalist, lightning-fast animations
   const fadeUp = {
     hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-    exit: { opacity: 0, y: -10, transition: { duration: 0.3 } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
   };
 
-  const selectedServiceObj = SERVICES.find(s => s.id === bookingData.serviceId);
+  const selectedServiceObj = BOOKABLE_SERVICES.find(s => s.id === bookingData.serviceId);
   const isMasterclass = selectedServiceObj?.isMasterclass || false;
   
-  const standardDeposit = 200;
-  const depositAmount = isMasterclass ? standardDeposit * 1.5 : standardDeposit;
+  const depositAmount = isMasterclass ? 1500 : 200; // Updated Masterclass deposit logic
 
   const today = new Date().toISOString().split('T')[0];
   const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
@@ -284,30 +317,42 @@ export default function Booking() {
         <div className="max-w-3xl mx-auto relative min-h-[400px]">
           <AnimatePresence mode="wait">
             
-            {/* STEP 1: Select Service */}
+            {/* STEP 1: Select Service (With Category Tabs) */}
             {step === 1 && (
               <motion.div key="step1" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-8" style={{ willChange: "opacity, transform" }}>
+                
+                {/* Horizontal Category Selector */}
+                <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-4 border-b border-gray-100">
+                    {SERVICE_CATEGORIES.map(category => (
+                        <button
+                            key={category}
+                            onClick={() => setActiveTab(category)}
+                            className={`px-4 py-2 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${
+                                activeTab === category 
+                                ? 'bg-[#1A1A1A] text-white' 
+                                : 'bg-gray-50 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-100'
+                            }`}
+                        >
+                            {category}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Filtered Services List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {SERVICES.map((s) => (
+                  {BOOKABLE_SERVICES.filter(s => s.category === activeTab).map((s) => (
                     <button 
                       key={s.id} 
                       onClick={() => handleServiceSelect(s)}
-                      className="w-full text-left flex items-center gap-4 group bg-white border border-gray-100 p-4 rounded-sm hover:border-gray-400 hover:shadow-sm transition-all duration-300"
+                      className="w-full text-left flex items-center justify-between group bg-white border border-gray-100 p-5 rounded-sm hover:border-[#1A1A1A] transition-all duration-300"
                     >
-                      <div className="w-20 h-24 overflow-hidden rounded-sm bg-gray-50 shrink-0 hidden sm:block">
-                        <img 
-                          src={s.img} 
-                          alt={s.name} 
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                          loading="lazy" decoding="async"
-                        />
-                      </div>
                       <div className="flex-grow">
-                        <span className="text-[9px] tracking-widest uppercase font-bold text-gray-400 block mb-1">{s.category}</span>
-                        <h3 className="text-lg font-medium text-[#1A1A1A] group-hover:text-gray-600 transition-colors tracking-wide">{s.name}</h3>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-2"><Clock size={10} /> {s.duration}</span>
+                        <h3 className="text-sm font-medium text-[#1A1A1A] group-hover:text-gray-600 transition-colors tracking-wide">{s.name}</h3>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 mt-2">
+                            <Clock size={10} /> {s.duration}
+                        </span>
                       </div>
-                      <div className="text-xl font-light text-[#1A1A1A] pr-2">{s.price}</div>
+                      <div className="text-lg font-light text-[#1A1A1A]">{s.price}</div>
                     </button>
                   ))}
                 </div>
@@ -365,7 +410,7 @@ export default function Booking() {
                                 ? 'bg-gray-50 text-gray-300 line-through border-gray-100 cursor-not-allowed' 
                                 : bookingData.time === t 
                                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' 
-                                  : 'bg-white border-gray-200 text-[#1A1A1A] hover:border-gray-400 disabled:bg-gray-50 disabled:opacity-50'
+                                  : 'bg-white border-gray-200 text-[#1A1A1A] hover:border-[#1A1A1A] disabled:bg-gray-50 disabled:opacity-50'
                             }`}
                           >
                             {t}
@@ -399,8 +444,6 @@ export default function Booking() {
                 )}
 
                 <form onSubmit={handleDetailsSubmit} className="space-y-10">
-                  
-                  {/* Basic Info */}
                   <div className="space-y-6">
                     <h3 className="text-[10px] tracking-widest uppercase font-bold text-gray-400 border-b border-gray-200 pb-2">Personal Details</h3>
                     <input 
@@ -422,12 +465,10 @@ export default function Booking() {
                     </div>
                   </div>
 
-                  {/* Consultation Form */}
                   <div className="space-y-6">
                     <h3 className="text-[10px] tracking-widest uppercase font-bold text-gray-400 border-b border-gray-200 pb-2 flex items-center gap-2">
                         <ClipboardList size={12}/> Technical Requirements
                     </h3>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Eye Shape</label>
@@ -481,7 +522,7 @@ export default function Booking() {
                   </div>
                   
                   <div className="flex gap-4 pt-6 border-t border-gray-100">
-                    <button type="button" onClick={() => setStep(2)} className="px-6 py-5 bg-transparent border border-gray-200 text-gray-500 font-bold uppercase tracking-widest text-[10px] rounded-sm hover:border-gray-400 transition-colors">
+                    <button type="button" onClick={() => setStep(2)} className="px-6 py-5 bg-transparent border border-gray-200 text-gray-500 font-bold uppercase tracking-widest text-[10px] rounded-sm hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors">
                         Back
                     </button>
                     <button disabled={isSubmitting || !bookingData.consent} type="submit" className="flex-1 flex items-center justify-center gap-3 bg-[#1A1A1A] text-white rounded-sm hover:bg-gray-800 transition-colors font-bold tracking-widest uppercase text-[10px] disabled:opacity-50">
@@ -492,7 +533,7 @@ export default function Booking() {
               </motion.div>
             )}
 
-            {/* STEP 4: Success & Payment Options */}
+            {/* STEP 4: Success & Payment Options (Including Cash) */}
             {step === 4 && (
               <motion.div key="step4" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6" style={{ willChange: "opacity, transform" }}>
                 <div className="w-16 h-16 border border-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -501,15 +542,18 @@ export default function Booking() {
                 <h2 className="text-3xl font-light mb-4 text-[#1A1A1A] uppercase tracking-wide">Action Required</h2>
                 
                 <p className="text-gray-500 font-light mb-10 max-w-sm mx-auto leading-relaxed text-sm">
-                  Your details are logged. To officially secure your session, the <strong className="font-bold text-[#1A1A1A]">R{depositAmount}</strong> deposit is required.
+                  Your details are logged. To officially secure your session, a <strong className="font-bold text-[#1A1A1A]">R{depositAmount}</strong> deposit is required.
                 </p>
 
-                <div className="flex bg-gray-50 p-1 rounded-sm mb-10 border border-gray-200">
-                  <button onClick={() => setPaymentMethod('gateway')} className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'gateway' ? 'bg-white shadow-sm border border-gray-100 text-[#1A1A1A]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
+                <div className="flex flex-wrap bg-gray-50 p-1 rounded-sm mb-10 border border-gray-200">
+                  <button onClick={() => setPaymentMethod('gateway')} className={`flex-1 py-3 px-2 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'gateway' ? 'bg-white shadow-sm border border-gray-100 text-[#1A1A1A]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
                     Card / Online
                   </button>
-                  <button onClick={() => setPaymentMethod('eft')} className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'eft' ? 'bg-white shadow-sm border border-gray-100 text-[#1A1A1A]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
+                  <button onClick={() => setPaymentMethod('eft')} className={`flex-1 py-3 px-2 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'eft' ? 'bg-white shadow-sm border border-gray-100 text-[#1A1A1A]' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
                     Manual EFT
+                  </button>
+                  <button onClick={() => setPaymentMethod('cash')} className={`flex-1 py-3 px-2 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'cash' ? 'bg-[#1A1A1A] shadow-sm text-white' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
+                    Pay Cash
                   </button>
                 </div>
 
@@ -549,7 +593,6 @@ export default function Booking() {
                           </div>
                         </div>
                       </div>
-
                       <button onClick={() => {
                           const msg = `Hi Gabby! I booked ${bookingData.serviceName} for ${bookingData.date} @ ${bookingData.time}. Here is my POP for the deposit!`;
                           window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
@@ -557,6 +600,24 @@ export default function Booking() {
                         className="w-full py-4 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-bold tracking-widest uppercase text-[10px] hover:bg-[#1A1A1A] hover:text-white transition-colors rounded-sm flex items-center justify-center gap-2"
                       >
                         <MessageSquare size={14} /> Send POP via WhatsApp
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* NEW CASH PAYMENT OPTION */}
+                  {paymentMethod === 'cash' && (
+                    <motion.div key="cash" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center border border-[#1A1A1A] bg-white p-8 rounded-sm">
+                      <Wallet className="mx-auto mb-4 text-[#1A1A1A]" size={32} strokeWidth={1} />
+                      <p className="text-sm font-light text-[#1A1A1A] mb-8 max-w-xs mx-auto leading-relaxed">
+                        You have opted to pay in cash. Please bring the exact amount to the studio on the day of your appointment.
+                      </p>
+                      <button onClick={() => {
+                          const msg = `Hi Gabby! I just booked ${bookingData.serviceName} for ${bookingData.date} @ ${bookingData.time} on the website. I have opted to pay in cash on the day!`;
+                          window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
+                        }} 
+                        className="w-full py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm flex items-center justify-center gap-2"
+                      >
+                        <MessageSquare size={14} /> Confirm via WhatsApp
                       </button>
                     </motion.div>
                   )}

@@ -7,20 +7,24 @@ import { memo } from "react";
 import { motion } from "motion/react";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 15 },
   visible: { 
     opacity: 1, 
     y: 0, 
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } 
+    transition: { duration: 0.5, ease: "easeOut" } 
   }
 };
 
 const Artist = memo(function Artist() {
   return (
-    <section className="py-32 px-6 lg:px-20 bg-[#FAF9F6] relative overflow-hidden">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
+    {/* 
+      REDUCED BOTTOM PADDING (pb-16 instead of py-32) 
+      This eliminates the awkward gap and creates a seamless flow into the Reviews section!
+    */}
+    <section className="pt-32 pb-16 px-6 lg:px-20 bg-[#FAF9F6] relative overflow-hidden">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
         
-        {/* Left Side: Accelerated Image Rendering */}
+        {/* Left Side: Editorial Image */}
         <motion.div 
             initial="hidden"
             whileInView="visible"
@@ -29,23 +33,24 @@ const Artist = memo(function Artist() {
             className="w-full lg:w-1/2 relative"
             style={{ willChange: "opacity, transform" }}
         >
-            <div className="absolute -inset-4 bg-gray-200 blur-2xl rounded-full z-0" style={{ transform: "translateZ(0)" }}></div>
+            <div className="absolute -inset-4 bg-gray-200 blur-2xl rounded-full z-0 opacity-50" style={{ transform: "translateZ(0)" }}></div>
             
-            <div className="aspect-[3/4] relative z-10 overflow-hidden shadow-sm rounded-sm">
-                {/* Now mapped directly to your local artist-gabby.jpg file */}
+            <div className="aspect-[4/5] relative z-10 overflow-hidden shadow-sm rounded-sm bg-gray-100">
+                {/* NEW IMAGE MAP: Close up applying lashes with tweezers */}
                 <img 
-                    src="/images/artist-gabby.jpg" 
-                    alt="Master Lash Artist Gabrielle"
+                    src="/images/applying-lashes.jpg" 
+                    alt="Gabrielle Applying Lash Extensions"
                     decoding="async"
                     loading="lazy"
                     className="w-full h-full object-cover"
                 />
             </div>
             
-            <div className="absolute -bottom-8 -right-8 w-32 h-32 border border-gray-200 rounded-full z-0"></div>
+            {/* Minimalist Decorative Element */}
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 border border-gray-300 rounded-full z-0"></div>
         </motion.div>
 
-        {/* Right Side: Typography */}
+        {/* Right Side: Typography & Stats */}
         <motion.div 
             initial="hidden"
             whileInView="visible"
@@ -56,7 +61,7 @@ const Artist = memo(function Artist() {
         >
             <div className="flex items-center gap-4 mb-6">
                 <div className="w-8 h-[1px] bg-[#1A1A1A]"></div>
-                <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-xs drop-shadow-sm">
+                <span className="text-[#1A1A1A] font-bold tracking-[0.2em] uppercase text-[10px]">
                     The Artist
                 </span>
             </div>
@@ -65,23 +70,24 @@ const Artist = memo(function Artist() {
                 Mastery in every <br/> single isolation.
             </h2>
 
-            <div className="space-y-6 text-gray-700 font-medium text-lg leading-relaxed tracking-wide">
+            <div className="space-y-6 text-gray-500 font-light text-lg leading-relaxed tracking-wide">
                 <p>
-                    With over five years of dedicated experience in the art of lash extension, Gabby has cultivated a reputation for unparalleled precision and aesthetic intuition.
+                    With over two years of dedicated experience in the art of lash extension, Gabby has cultivated a reputation for unparalleled precision and aesthetic intuition.
                 </p>
                 <p>
                     Every set is a bespoke creation. We don't believe in templates; we believe in mapping the natural architecture of your eye to create enhancements that are both safe and breathtakingly beautiful.
                 </p>
             </div>
 
+            {/* UPDATED STATS TO EXACTLY MATCH HER REQUEST */}
             <div className="mt-12 grid grid-cols-2 gap-8 pt-12 border-t border-gray-200">
                 <div>
-                    <h4 className="text-3xl font-bold text-[#1A1A1A] mb-2">5+</h4>
-                    <p className="text-xs font-black uppercase tracking-widest text-gray-400">Years Mastered</p>
+                    <h4 className="text-4xl font-light tracking-tighter text-[#1A1A1A] mb-2">2+</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Years Mastered</p>
                 </div>
                 <div>
-                    <h4 className="text-3xl font-bold text-[#1A1A1A] mb-2">3k+</h4>
-                    <p className="text-xs font-black uppercase tracking-widest text-gray-400">Sets Completed</p>
+                    <h4 className="text-4xl font-light tracking-tighter text-[#1A1A1A] mb-2">2k+</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Sets Completed</p>
                 </div>
             </div>
         </motion.div>
