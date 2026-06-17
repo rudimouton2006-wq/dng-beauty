@@ -48,29 +48,23 @@ const Home = memo(function Home({ setPage }: HomeProps) {
     <main className="bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A] selection:bg-[#1A1A1A] selection:text-[#FAF9F6] relative overflow-x-hidden">
       
       {/* 
-        HERO SECTION - DYNAMIC EDITORIAL LAYOUT 
-        Features continuous flowing text, a massive transparent cutout, and an ambient spotlight glow.
+        HERO SECTION - HIGH-END EDITORIAL LAYOUT 
+        Features a gradient fade on the image bottom, elegant serif typography, and a warm champagne glow.
       */}
       <section className="relative min-h-[100vh] flex items-center pt-20 lg:pt-0 overflow-hidden bg-[#FAF9F6]">
         
-        {/* Dynamic Scrolling Background Text (Infinite Marquee) */}
-        <div className="absolute top-[45%] lg:top-1/2 -translate-y-1/2 left-0 w-full z-0 pointer-events-none select-none flex overflow-hidden">
-            <motion.div
-                animate={{ x: [0, "-50%"] }}
-                transition={{ repeat: Infinity, ease: "linear", duration: 40 }}
-                className="flex whitespace-nowrap"
-            >
-                {/* We render the text twice to create a seamless infinite loop */}
-                <h1 className="text-[24vw] font-black tracking-tighter text-gray-200/60 leading-[0.8] uppercase pr-8">
-                    MASTERY MASTERY MASTERY
-                </h1>
-                <h1 className="text-[24vw] font-black tracking-tighter text-gray-200/60 leading-[0.8] uppercase pr-8">
-                    MASTERY MASTERY MASTERY
-                </h1>
-            </motion.div>
+        {/* Luxury Background Elements */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
+            {/* Elegant Serif Watermark */}
+            <h1 className="text-[12vw] font-serif tracking-widest text-gray-200/50 leading-none uppercase whitespace-nowrap absolute top-[40%] lg:top-[50%] -translate-y-1/2">
+                Lash Architecture
+            </h1>
+            
+            {/* Soft Champagne / Warm Blush Glow Accent */}
+            <div className="absolute top-[50%] lg:top-[60%] right-[-10%] lg:right-[10%] w-[80vw] lg:w-[40vw] h-[80vw] lg:h-[40vw] bg-gradient-to-tr from-[#E8D8CE]/60 to-[#F2EBE5]/40 rounded-full blur-[120px] mix-blend-multiply opacity-80 -translate-y-1/2"></div>
         </div>
 
-        {/* Foreground Content */}
+        {/* Foreground Typography & CTA */}
         <div className="relative z-20 w-full lg:w-1/2 flex flex-col justify-center px-6 lg:px-20 py-16 lg:py-0">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
             <div className="flex items-center gap-4 mb-8">
@@ -80,11 +74,11 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-[7rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.85] mb-8 uppercase relative z-30">
+            <h1 className="text-6xl sm:text-7xl lg:text-[7.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.85] mb-8 uppercase relative z-30 drop-shadow-sm">
               DnG <br/> Beauty
             </h1>
             
-            <p className="text-gray-500 text-lg max-w-md font-light leading-relaxed mb-12 tracking-wide relative z-30 bg-[#FAF9F6]/60 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-2 lg:p-0 rounded-sm">
+            <p className="text-gray-500 text-lg max-w-md font-light leading-relaxed mb-12 tracking-wide relative z-30 bg-[#FAF9F6]/40 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-3 lg:p-0 rounded-sm">
               Luxury lash extensions perfectly tailored to the natural architecture of your eye shape.
             </p>
 
@@ -105,16 +99,20 @@ const Home = memo(function Home({ setPage }: HomeProps) {
           </motion.div>
         </div>
 
-        {/* Scaled-Up Transparent PNG Cutout with Ambient Glow */}
+        {/* 
+            Scaled-Up Transparent PNG Cutout with Feathered Gradient Fade 
+            The maskImage CSS makes the bottom 15% of her image fade seamlessly into the background!
+        */}
         <motion.div 
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-            className="absolute bottom-0 right-[-20%] lg:right-[2%] w-[140%] lg:w-[60%] h-[65%] lg:h-[95%] z-10 pointer-events-none flex justify-center items-end"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+            className="absolute bottom-0 right-[-15%] lg:right-[2%] w-[130%] lg:w-[55%] h-[70%] lg:h-[95%] z-10 pointer-events-none flex justify-center items-end"
+            style={{ 
+                WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' 
+            }}
         >
-            {/* Soft Luxury Glow Accent placed directly behind the image */}
-            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[70%] bg-gradient-to-tr from-gray-300 via-gray-400/40 to-transparent rounded-full blur-[100px] -z-10"></div>
-
             <img 
                 src="/images/gabby-cutout.png" 
                 alt="Gabby - Lead Lash Tech"
