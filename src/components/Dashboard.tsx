@@ -27,7 +27,7 @@ interface BookingRecord {
   date: string; 
   time: string;
   totalPrice?: number; 
-  status?: "pending" | "completed" | "cancelled" | "closed_day";
+  status?: "pending" | "completed" | "cancelled" | "closed_day" | "blocked_slot";
   createdAt: any;
   depositPaid?: boolean; 
   paymentMethod?: "EFT" | "Gateway" | "Pending" | "Cash";
@@ -54,6 +54,8 @@ const modalVariant = {
   visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", damping: 25, stiffness: 300 } },
   exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } }
 };
+
+const ALL_TIME_SLOTS = ["09:00", "11:00", "13:00", "15:00", "17:00"];
 
 const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -133,7 +135,6 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     }
   };
 
-  // --- NEW: CANCEL BOOKING LOGIC ---
   const cancelBooking = async (bookingId: string) => {
     if (!window.confirm("Are you sure you want to cancel this appointment? This will instantly free up the slot for other clients.")) return;
     try {
@@ -151,19 +152,16 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     }
   };
 
-  // --- NEW: CLOSE DAY / OPEN DAY LOGIC ---
   const toggleDayClose = async () => {
     if (!selectedDate) return;
     const dayBlock = bookings.find(b => b.date === selectedDate && b.status === "closed_day");
     
     try {
       if (dayBlock) {
-        // Open the day (Delete the block)
         setBookings(prev => prev.filter(b => b.id !== dayBlock.id));
         await deleteDoc(doc(db, "bookings", dayBlock.id));
       } else {
-        // Close the day (Create a block)
-        if (!window.confirm("Are you sure you want to close this day? Clients will not be able to book any slots.")) return;
+        if (!window.confirm("Are you sure you want to close this entire day? Clients will not be able to book any slots.")) return;
         const newBlock = {
           date: selectedDate,
           status: "closed_day" as const,
@@ -178,6 +176,35 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     } catch (err) {
       console.error("Error toggling day status:", err);
       handleRefresh();
+    }
+  };
+
+  // --- NEW: INDIVIDUAL TIME SLOT BLOCKING ---
+  const toggleSlotBlock = async (time: string) => {
+    if (!selectedDate) return;
+    const existingBlock = bookings.find(b => b.date === selectedDate && b.time === time && b.status === "blocked_slot");
+
+    try {
+        if (existingBlock) {
+            // Unblock it
+            setBookings(prev => prev.filter(b => b.id !== existingBlock.id));
+            await deleteDoc(doc(db, "bookings", existingBlock.id));
+        } else {
+            // Block it
+            const newBlock = {
+                date: selectedDate,
+                time: time,
+                status: "blocked_slot" as const,
+                serviceName: "Time Slot Locked",
+                customerName: "System",
+                createdAt: serverTimestamp()
+            };
+            const docRef = await addDoc(collection(db, "bookings"), newBlock);
+            setBookings(prev => [{ id: docRef.id, ...newBlock } as BookingRecord, ...prev]);
+        }
+    } catch (err) {
+        console.error("Error toggling slot:", err);
+        handleRefresh();
     }
   };
 
@@ -203,15 +230,16 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
       const isCompleted = b.status === "completed";
       const isCancelled = b.status === "cancelled";
       const isClosedDay = b.status === "closed_day";
+      const isBlockedSlot = b.status === "blocked_slot";
       const value = Number(b.totalPrice) || 0; 
 
-      if (isCompleted && !b.isDay2Ghost && !isClosedDay) {
+      if (isCompleted && !b.isDay2Ghost && !isClosedDay && !isBlockedSlot) {
         if (bDate.getMonth() === currentMonthNum && bDate.getFullYear() === currentYearNum) {
           currentIncome += value;
         } else if (bDate.getMonth() === prevMonthNum && bDate.getFullYear() === prevYearNum) {
           prevIncome += value;
         }
-      } else if (!isCompleted && !isCancelled && !isClosedDay && !b.isDay2Ghost) {
+      } else if (!isCompleted && !isCancelled && !isClosedDay && !isBlockedSlot && !b.isDay2Ghost) {
         upcomingCount++;
       }
     });
@@ -238,7 +266,8 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
 
   const selectedDayBookings = bookings.filter(b => b.date === selectedDate);
   const isSelectedDayClosed = selectedDayBookings.some(b => b.status === "closed_day");
-  const actualAppointments = selectedDayBookings.filter(b => b.status !== "closed_day");
+  // Filter out the blocks from the actual appointment list so they don't show up as client cards
+  const actualAppointments = selectedDayBookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot");
 
   // 1. Daily Schedule Drawer
   const DayDrawer = () => {
@@ -251,8 +280,6 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-light text-[#1A1A1A] tracking-tight uppercase">Daily Schedule</h2>
-                
-                {/* NEW: CLOSE DAY TOGGLE */}
                 <button onClick={toggleDayClose} className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest rounded-sm flex items-center gap-1.5 transition-colors ${isSelectedDayClosed ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'}`}>
                     {isSelectedDayClosed ? <Lock size={12}/> : <Unlock size={12}/>}
                     {isSelectedDayClosed ? "Day Closed" : "Close Day"}
@@ -279,13 +306,12 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
             )}
 
             {actualAppointments.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-50 py-10">
-                <CalendarIcon size={48} className="mb-4 text-gray-400" />
-                <h3 className="text-lg font-light text-[#1A1A1A] uppercase">No Bookings</h3>
-                <p className="text-sm font-medium">Your schedule is clear for today.</p>
+              <div className="flex flex-col items-center justify-center text-center opacity-50 py-6">
+                <CalendarIcon size={32} className="mb-3 text-gray-400" />
+                <h3 className="text-base font-light text-[#1A1A1A] uppercase">No Bookings</h3>
               </div>
             ) : (
-              <div className="space-y-4 pb-20">
+              <div className="space-y-4">
                 {actualAppointments.sort((a, b) => a.time.localeCompare(b.time)).map((booking) => {
                   const isCompleted = booking.status === "completed";
                   const isCancelled = booking.status === "cancelled";
@@ -335,6 +361,46 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                 })}
               </div>
             )}
+
+            {/* NEW: SPECIFIC TIME SLOT MANAGEMENT UI */}
+            {!isSelectedDayClosed && (
+                <div className="mt-10 border-t border-gray-200 pt-8 pb-10">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                        <Clock size={12} /> Manage Specific Slots
+                    </h3>
+                    <div className="space-y-2">
+                        {ALL_TIME_SLOTS.map(time => {
+                            const clientBooking = actualAppointments.find(b => b.time === time && b.status !== "cancelled");
+                            const isManuallyBlocked = bookings.some(b => b.date === selectedDate && b.time === time && b.status === "blocked_slot");
+
+                            return (
+                                <div key={time} className={`flex items-center justify-between p-3 border rounded-sm transition-colors ${isManuallyBlocked ? 'bg-red-50/50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                    <span className={`text-xs font-bold ${isManuallyBlocked ? 'text-red-500' : 'text-[#1A1A1A]'}`}>{time}</span>
+                                    
+                                    {clientBooking ? (
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 bg-gray-50 px-2 py-1 rounded-sm border border-gray-100">
+                                            Booked
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={() => toggleSlotBlock(time)}
+                                            className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-colors flex items-center gap-1.5 ${
+                                                isManuallyBlocked 
+                                                ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
+                                                : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {isManuallyBlocked ? <Lock size={12} /> : <Unlock size={12} />}
+                                            {isManuallyBlocked ? "Unlock Slot" : "Lock Slot"}
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
           </div>
         </motion.div>
       </div>,
@@ -346,7 +412,7 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
   const ClientDetailModal = () => {
     if (!selectedClientBooking) return null;
     
-    const clientHistory = bookings.filter(b => b.customerEmail === selectedClientBooking.customerEmail && !b.isDay2Ghost && b.status !== "closed_day");
+    const clientHistory = bookings.filter(b => b.customerEmail === selectedClientBooking.customerEmail && !b.isDay2Ghost && b.status !== "closed_day" && b.status !== "blocked_slot");
     const lifetimeValue = clientHistory.filter(b => b.status === 'completed').reduce((sum, b) => sum + Number(b.totalPrice || 0), 0);
     const isCompleted = selectedClientBooking.status === 'completed';
     const isCancelled = selectedClientBooking.status === 'cancelled';
@@ -585,11 +651,12 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                     const dayNum = parseInt(dateString.split('-')[2]);
                     const dayBookings = bookings.filter(b => b.date === dateString);
                     const isClosed = dayBookings.some(b => b.status === "closed_day");
-                    const validAppts = dayBookings.filter(b => b.status !== "closed_day" && b.status !== "cancelled");
+                    // Show dots only for valid client appts (not blocks, not cancelled)
+                    const validAppts = dayBookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot" && b.status !== "cancelled");
                     const hasPending = validAppts.some(b => b.status !== "completed");
                     
                     return (
-                      <button key={dateString} onClick={() => openDaySchedule(dateString)} className={`relative aspect-square md:aspect-[4/3] rounded-sm flex flex-col items-center md:items-start justify-center md:justify-start md:p-4 transition-all duration-300 border group ${isClosed ? 'bg-red-50 border-red-200 text-red-500 cursor-not-allowed hover:bg-red-100' : validAppts.length > 0 ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:scale-105 shadow-md z-10' : 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:bg-white text-gray-600'}`}>
+                      <button key={dateString} onClick={() => openDaySchedule(dateString)} className={`relative aspect-square md:aspect-[4/3] rounded-sm flex flex-col items-center md:items-start justify-center md:justify-start md:p-4 transition-all duration-300 border group ${isClosed ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : validAppts.length > 0 ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:scale-105 shadow-md z-10' : 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:bg-white text-gray-600'}`}>
                         <div className="flex w-full justify-between items-start">
                             <span className="text-lg md:text-xl font-bold">{dayNum}</span>
                             {isClosed && <Lock size={12} className="text-red-400 mt-1 md:mt-1.5" />}
@@ -610,11 +677,11 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
         ) : (
             <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-gray-200 rounded-sm p-8 shadow-sm">
                 <h2 className="text-2xl font-light uppercase text-[#1A1A1A] mb-8">All Bookings</h2>
-                {bookings.filter(b => b.status !== "closed_day").length === 0 ? (
+                {bookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot").length === 0 ? (
                     <p className="text-gray-400 text-sm font-medium">No bookings have been made yet.</p>
                 ) : (
                     <div className="space-y-4">
-                        {bookings.filter(b => b.status !== "closed_day").map(booking => {
+                        {bookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot").map(booking => {
                             const isCancelled = booking.status === "cancelled";
                             return (
                                 <div key={booking.id} onClick={() => openClientDetails(booking)} className={`flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-sm hover:bg-gray-50 transition-all cursor-pointer gap-4 ${isCancelled ? 'border-gray-200 bg-gray-50 opacity-70 grayscale' : booking.isDay2Ghost ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-200'}`}>
