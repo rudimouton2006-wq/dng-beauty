@@ -52,7 +52,7 @@ const EXTENSIONS = [
     name: "Wispy + Spikes", 
     duration: "3 Hours", 
     desc: "Our signature editorial look. A highly customized, textured set combining closed volume spikes with soft, feathery bases for a modern, stripped-lash illusion.",
-    images: ["/images/wispy-spikes.jpg"],
+    images: ["/images/wispy-spikes-new.jpg"], // Updated to the new image path
     prices: [ { label: "Full Set", price: "R500" }, { label: "2-3 Week Fill", price: "R390" }, { label: "3-4 Week Fill", price: "R400" } ]
   }
 ];
@@ -68,7 +68,7 @@ const CLUSTERS = [
 ];
 
 const ADD_ONS = [
-  { id: "a1", name: "Brow Shape", price: "R50", duration: "30 Min", desc: "Precision waxing and tweezing to sculpt your arches perfectly to your bone structure.", img: "/images/brow-shape.jpg" },
+  { id: "a1", name: "Brow Shape", price: "R50", duration: "30 Min", desc: "Precision waxing and tweezing to sculpt your arches perfectly to your bone structure.", img: "/images/brow-shape-new.jpg" }, // Updated to the new image path
   { id: "a2", name: "Brow Shape + Tint", price: "R100", duration: "1 Hour", desc: "Sculpting paired with custom color-matching to define and fill the brow architecture.", img: "/images/brow-shape-tint.jpg" },
   { id: "a3", name: "Brow Lamination + Free Tint", price: "R300", duration: "45 Min", desc: "A semi-permanent relaxing treatment that realigns brow hairs for a fuller, feathery aesthetic.", img: "/images/brow-lamination.jpg" },
   { id: "a4", name: "Lash Lift", price: "R350", duration: "60 Min", desc: "We permanently curl your natural lashes upward, opening the eye and delivering a flawless look.", img: "/images/lash-lift.jpg" }

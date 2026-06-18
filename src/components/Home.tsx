@@ -30,7 +30,7 @@ const SERVICES = [
     title: "Brow Styling", 
     price: "From R50", 
     desc: "Sculpted perfection.",
-    img: "/images/brow-shape.jpg" 
+    img: "/images/brow-shape-new.jpg" // Updated to the new image path
   }
 ];
 
@@ -72,13 +72,15 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                 </span>
             </div>
 
+            {/* NEW COPYWRITING: Your Eyes, Only Better */}
             <h1 className="text-[3.5rem] sm:text-6xl lg:text-[6.5rem] font-light tracking-tighter text-[#1A1A1A] leading-[0.9] mb-6 lg:mb-8 uppercase drop-shadow-md lg:drop-shadow-sm">
-              The Art of <br/> <span className="font-medium">The Arch.</span>
+              Your Eyes, <br/> <span className="font-medium">Only Better.</span>
             </h1>
             
+            {/* NEW COPYWRITING: Gabby's Custom ChatGPT Paragraph */}
             <div className="text-gray-600 lg:text-gray-500 text-sm sm:text-base lg:text-lg max-w-lg font-light leading-relaxed mb-6 lg:mb-12 tracking-wide space-y-4">
-              <p>Experience lash extensions elevated to high art.</p>
-              <p>We specialize in bespoke enhancements, meticulously mapping your natural eye architecture to craft a look of effortless luxury and uncompromising precision.</p>
+              <p>Your eyes are one of your most defining features, and we're here to make them unforgettable.</p>
+              <p>We offer customized lash and brow services that enhance your natural beauty, boost your confidence, and simplify your daily routine. Whether you love a soft, natural look or full glamour, we've got you covered.</p>
             </div>
 
             {/* DESKTOP BUTTONS - Hidden on Mobile */}
@@ -99,11 +101,7 @@ const Home = memo(function Home({ setPage }: HomeProps) {
           </motion.div>
         </div>
 
-        {/* 
-            Responsive Image Cutout 
-            Mobile: Takes up the middle, sitting below the text.
-            Desktop: Absolute positioning on the right side.
-        */}
+        {/* Responsive Image Cutout */}
         <motion.div 
             initial={{ opacity: 0, filter: "blur(10px)" }}
             animate={{ opacity: 1, filter: "blur(0px)" }}
@@ -226,10 +224,6 @@ const Home = memo(function Home({ setPage }: HomeProps) {
                     </button>
                 </div>
                 
-                {/* 
-                   FIXED IMAGE CROP 
-                   Changed mobile aspect ratio to [4/5] to give height, and used object-center to perfectly frame her body and face without awkwardly cutting off the top of her head.
-                */}
                 <div className="w-full lg:w-1/2 relative aspect-[4/5] sm:aspect-video lg:aspect-square bg-gray-100 rounded-sm overflow-hidden border border-gray-200">
                     <img 
                         src="/images/hero-welcome.jpg" 

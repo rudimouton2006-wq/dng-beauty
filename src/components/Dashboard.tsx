@@ -9,10 +9,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   LogOut, Calendar as CalendarIcon, Clock, Phone, Mail, 
   RefreshCcw, Loader2, AlertCircle, MessageSquare, 
-  CheckCircle2, ChevronLeft, ChevronRight, TrendingUp, X, User, History, CreditCard, ClipboardList
+  CheckCircle2, ChevronLeft, ChevronRight, TrendingUp, X, User, History, CreditCard, ClipboardList, Lock, Unlock, Trash2
 } from "lucide-react";
 import { db } from "../lib/firebase";
-import { collection, query, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from "firebase/firestore";
 
 interface DashboardProps {
   setPage: (page: string) => void;
@@ -26,8 +26,8 @@ interface BookingRecord {
   customerPhone: string;
   date: string; 
   time: string;
-  totalPrice?: number; // Uses totalPrice for accurate stats instead of variable deposit string
-  status?: "pending" | "completed";
+  totalPrice?: number; 
+  status?: "pending" | "completed" | "cancelled" | "closed_day";
   createdAt: any;
   depositPaid?: boolean; 
   paymentMethod?: "EFT" | "Gateway" | "Pending" | "Cash";
@@ -35,7 +35,7 @@ interface BookingRecord {
   lashStyle?: string;
   preferredMapping?: string;
   allergies?: string;
-  isDay2Ghost?: boolean; // Identifies automated Masterclass auto-blocks
+  isDay2Ghost?: boolean; 
 }
 
 const fadeUp = {
@@ -133,7 +133,54 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     }
   };
 
-  // 1-CLICK WHATSAPP REMINDER LOGIC
+  // --- NEW: CANCEL BOOKING LOGIC ---
+  const cancelBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment? This will instantly free up the slot for other clients.")) return;
+    try {
+      setBookings(prev => prev.map(b => 
+        b.id === bookingId ? { ...b, status: "cancelled" } : b
+      ));
+      if (selectedClientBooking?.id === bookingId) {
+        setSelectedClientBooking(prev => prev ? { ...prev, status: "cancelled" } : null);
+      }
+      const bookingRef = doc(db, "bookings", bookingId);
+      await updateDoc(bookingRef, { status: "cancelled" });
+    } catch (err) {
+      console.error("Error cancelling:", err);
+      handleRefresh(); 
+    }
+  };
+
+  // --- NEW: CLOSE DAY / OPEN DAY LOGIC ---
+  const toggleDayClose = async () => {
+    if (!selectedDate) return;
+    const dayBlock = bookings.find(b => b.date === selectedDate && b.status === "closed_day");
+    
+    try {
+      if (dayBlock) {
+        // Open the day (Delete the block)
+        setBookings(prev => prev.filter(b => b.id !== dayBlock.id));
+        await deleteDoc(doc(db, "bookings", dayBlock.id));
+      } else {
+        // Close the day (Create a block)
+        if (!window.confirm("Are you sure you want to close this day? Clients will not be able to book any slots.")) return;
+        const newBlock = {
+          date: selectedDate,
+          status: "closed_day" as const,
+          serviceName: "System Day Block",
+          customerName: "System",
+          time: "ALL_DAY",
+          createdAt: serverTimestamp()
+        };
+        const docRef = await addDoc(collection(db, "bookings"), newBlock);
+        setBookings(prev => [{ id: docRef.id, ...newBlock } as BookingRecord, ...prev]);
+      }
+    } catch (err) {
+      console.error("Error toggling day status:", err);
+      handleRefresh();
+    }
+  };
+
   const sendWhatsAppReminder = (clientName: string, phone: string, time: string, service: string) => {
     const formattedPhone = phone.startsWith('0') ? `+27${phone.substring(1)}` : phone;
     const cleanPhone = formattedPhone.replace(/[\s-]/g, '');
@@ -141,7 +188,6 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  // STATS CALCULATION (Fixed to use totalPrice instead of deposit)
   const stats = useMemo(() => {
     const currentMonthNum = currentMonth.getMonth();
     const currentYearNum = currentMonth.getFullYear();
@@ -155,15 +201,17 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     bookings.forEach(b => {
       const bDate = new Date(b.date);
       const isCompleted = b.status === "completed";
-      const value = Number(b.totalPrice) || 0; // Using exact total price
+      const isCancelled = b.status === "cancelled";
+      const isClosedDay = b.status === "closed_day";
+      const value = Number(b.totalPrice) || 0; 
 
-      if (isCompleted && !b.isDay2Ghost) { // Don't double count ghost income
+      if (isCompleted && !b.isDay2Ghost && !isClosedDay) {
         if (bDate.getMonth() === currentMonthNum && bDate.getFullYear() === currentYearNum) {
           currentIncome += value;
         } else if (bDate.getMonth() === prevMonthNum && bDate.getFullYear() === prevYearNum) {
           prevIncome += value;
         }
-      } else if (!isCompleted) {
+      } else if (!isCompleted && !isCancelled && !isClosedDay && !b.isDay2Ghost) {
         upcomingCount++;
       }
     });
@@ -189,8 +237,10 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
 
   const selectedDayBookings = bookings.filter(b => b.date === selectedDate);
+  const isSelectedDayClosed = selectedDayBookings.some(b => b.status === "closed_day");
+  const actualAppointments = selectedDayBookings.filter(b => b.status !== "closed_day");
 
-  // 1. Daily Schedule Drawer (With Strict Sorting & Ghost Blockers)
+  // 1. Daily Schedule Drawer
   const DayDrawer = () => {
     if (!isDrawerOpen) return null;
     return createPortal(
@@ -199,8 +249,16 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
         <motion.div variants={drawerVariant} initial="hidden" animate="visible" exit="exit" className="relative w-full md:w-[500px] h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-gray-200">
           <div className="bg-white p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
             <div>
-              <h2 className="text-xl font-light text-[#1A1A1A] tracking-tight uppercase">Daily Schedule</h2>
-              <p className="text-sm font-bold text-gray-500">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-light text-[#1A1A1A] tracking-tight uppercase">Daily Schedule</h2>
+                
+                {/* NEW: CLOSE DAY TOGGLE */}
+                <button onClick={toggleDayClose} className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest rounded-sm flex items-center gap-1.5 transition-colors ${isSelectedDayClosed ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'}`}>
+                    {isSelectedDayClosed ? <Lock size={12}/> : <Unlock size={12}/>}
+                    {isSelectedDayClosed ? "Day Closed" : "Close Day"}
+                </button>
+              </div>
+              <p className="text-sm font-bold text-gray-500 mt-1">
                 {selectedDate ? new Date(selectedDate).toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ""}
               </p>
             </div>
@@ -210,45 +268,62 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
           </div>
 
           <div className="flex-grow overflow-y-auto p-6">
-            {selectedDayBookings.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+            {isSelectedDayClosed && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm flex items-start gap-3">
+                    <Lock className="text-red-500 shrink-0 mt-0.5" size={18} />
+                    <div>
+                        <h4 className="text-sm font-bold text-red-700 uppercase tracking-widest mb-1">Bookings Locked</h4>
+                        <p className="text-xs text-red-600 leading-relaxed">This day is closed. Clients cannot book new appointments on this date.</p>
+                    </div>
+                </div>
+            )}
+
+            {actualAppointments.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-50 py-10">
                 <CalendarIcon size={48} className="mb-4 text-gray-400" />
                 <h3 className="text-lg font-light text-[#1A1A1A] uppercase">No Bookings</h3>
                 <p className="text-sm font-medium">Your schedule is clear for today.</p>
               </div>
             ) : (
               <div className="space-y-4 pb-20">
-                {/* STRICT CHRONOLOGICAL SORTING (.sort by time) */}
-                {selectedDayBookings.sort((a, b) => a.time.localeCompare(b.time)).map((booking) => {
+                {actualAppointments.sort((a, b) => a.time.localeCompare(b.time)).map((booking) => {
                   const isCompleted = booking.status === "completed";
+                  const isCancelled = booking.status === "cancelled";
+
                   return (
                     <motion.div layout key={booking.id} 
                       onClick={() => openClientDetails(booking)}
                       className={`relative border rounded-sm p-5 shadow-sm transition-all duration-300 cursor-pointer ${
-                        booking.isDay2Ghost 
-                        ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500 border-indigo-100' // Ghost Style
-                        : isCompleted ? 'bg-white border-l-4 border-l-gray-300 opacity-60 grayscale hover:grayscale-0' // Completed Style
-                        : 'bg-white border-l-4 border-l-[#1A1A1A] border-gray-200 hover:shadow-md hover:border-gray-400' // Default Style
+                        isCancelled ? 'bg-gray-50 border-gray-200 opacity-60 grayscale'
+                        : booking.isDay2Ghost ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500 border-indigo-100'
+                        : isCompleted ? 'bg-white border-l-4 border-l-gray-300 opacity-60 grayscale hover:grayscale-0'
+                        : 'bg-white border-l-4 border-l-[#1A1A1A] border-gray-200 hover:shadow-md hover:border-gray-400'
                       }`}
                     >
-                      {/* GHOST BLOCKER BADGE */}
-                      {booking.isDay2Ghost && (
+                      {booking.isDay2Ghost && !isCancelled && (
                           <div className="absolute top-0 right-0 bg-indigo-100 text-indigo-700 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-sm">
                               System Auto-Block
+                          </div>
+                      )}
+                      {isCancelled && (
+                          <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-sm">
+                              Cancelled
                           </div>
                       )}
 
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0"><User size={16} className="text-gray-500" /></div>
+                          <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                              {isCancelled ? <X size={16} className="text-red-400"/> : <User size={16} className="text-gray-500" />}
+                          </div>
                           <div>
-                              <h3 className="text-base font-bold text-[#1A1A1A] leading-tight">{booking.customerName}</h3>
+                              <h3 className={`text-base font-bold leading-tight ${isCancelled ? 'text-gray-500 line-through' : 'text-[#1A1A1A]'}`}>{booking.customerName}</h3>
                               <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{booking.serviceName}</span>
                           </div>
                         </div>
                         <div className="text-right">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Total Fee</span>
-                            <span className="text-sm font-black text-[#1A1A1A]">{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
+                            <span className={`text-sm font-black ${isCancelled ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 bg-[#FAF9F6] p-3 rounded-sm border border-gray-100">
@@ -271,9 +346,10 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
   const ClientDetailModal = () => {
     if (!selectedClientBooking) return null;
     
-    const clientHistory = bookings.filter(b => b.customerEmail === selectedClientBooking.customerEmail && !b.isDay2Ghost);
+    const clientHistory = bookings.filter(b => b.customerEmail === selectedClientBooking.customerEmail && !b.isDay2Ghost && b.status !== "closed_day");
     const lifetimeValue = clientHistory.filter(b => b.status === 'completed').reduce((sum, b) => sum + Number(b.totalPrice || 0), 0);
     const isCompleted = selectedClientBooking.status === 'completed';
+    const isCancelled = selectedClientBooking.status === 'cancelled';
 
     return createPortal(
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
@@ -297,10 +373,16 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
-            {selectedClientBooking.isDay2Ghost && (
+            {selectedClientBooking.isDay2Ghost && !isCancelled && (
                 <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 p-4 rounded-sm flex items-center gap-3">
                     <AlertCircle size={18} />
                     <p className="text-xs font-bold uppercase tracking-widest">This is a system-generated block for Day 2 of a Masterclass.</p>
+                </div>
+            )}
+            {isCancelled && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-sm flex items-center gap-3">
+                    <AlertCircle size={18} />
+                    <p className="text-xs font-bold uppercase tracking-widest">This appointment has been cancelled. The slot is open.</p>
                 </div>
             )}
 
@@ -345,19 +427,28 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                     <CreditCard size={20} className="text-gray-300" />
                   </div>
                   
+                  {/* ACTIONS TRAY */}
                   <div className="flex-1 flex gap-2">
-                    {!isCompleted ? (
-                      <button onClick={() => markAsCompleted(selectedClientBooking.id)} className="flex-1 py-3 bg-[#1A1A1A] text-white font-black uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm flex items-center justify-center gap-2 shadow-sm border border-[#1A1A1A]">
-                        <CheckCircle2 size={16} /> Mark Done
-                      </button>
-                    ) : (
+                    {!isCompleted && !isCancelled ? (
+                      <>
+                        <button onClick={() => markAsCompleted(selectedClientBooking.id)} className="flex-1 py-3 bg-[#1A1A1A] text-white font-black uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm flex items-center justify-center gap-2 shadow-sm border border-[#1A1A1A]">
+                          <CheckCircle2 size={16} /> Mark Done
+                        </button>
+                        <button onClick={() => cancelBooking(selectedClientBooking.id)} className="px-4 py-3 bg-red-50 text-red-600 font-black uppercase text-[10px] hover:bg-red-100 transition-colors rounded-sm flex items-center justify-center border border-red-200" title="Cancel Appointment">
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    ) : isCompleted ? (
                       <div className="flex-1 py-3 bg-gray-100 text-gray-500 font-black uppercase text-[10px] rounded-sm flex items-center justify-center gap-2 border border-gray-200">
                         <CheckCircle2 size={16} /> Completed
                       </div>
+                    ) : (
+                      <div className="flex-1 py-3 bg-red-50 text-red-600 font-black uppercase text-[10px] rounded-sm flex items-center justify-center gap-2 border border-red-200">
+                        <X size={16} /> Cancelled
+                      </div>
                     )}
                     
-                    {/* 1-CLICK WHATSAPP REMINDER BUTTON */}
-                    {!selectedClientBooking.isDay2Ghost && (
+                    {!selectedClientBooking.isDay2Ghost && !isCancelled && (
                         <button onClick={() => sendWhatsAppReminder(selectedClientBooking.customerName, selectedClientBooking.customerPhone, selectedClientBooking.time, selectedClientBooking.serviceName)} 
                         className="px-5 py-3 bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-colors rounded-sm flex items-center justify-center border border-[#25D366]/20"
                         title="Send Reminder via WhatsApp"
@@ -370,7 +461,6 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
               </div>
             </div>
 
-            {/* Client History Profile */}
             {!selectedClientBooking.isDay2Ghost && (
                 <div>
                 <div className="flex justify-between items-end mb-3 border-b border-gray-200 pb-2">
@@ -385,13 +475,13 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                         {clientHistory.map(hist => (
                         <div key={hist.id} className={`p-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${hist.id === selectedClientBooking.id ? 'bg-[#FAF9F6]' : ''}`}>
                             <div>
-                            <p className="text-sm font-bold text-[#1A1A1A]">{hist.serviceName}</p>
+                            <p className={`text-sm font-bold ${hist.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-[#1A1A1A]'}`}>{hist.serviceName}</p>
                             <p className="text-xs font-medium text-gray-500">{hist.date} • {hist.time}</p>
                             </div>
                             <div className="text-right">
-                            <span className="text-sm font-black text-[#1A1A1A] block">R{hist.totalPrice || 0}</span>
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${hist.status === 'completed' ? 'text-gray-400' : 'text-orange-500'}`}>
-                                {hist.status === 'completed' ? 'Done' : 'Upcoming'}
+                            <span className={`text-sm font-black block ${hist.status === 'cancelled' ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>R{hist.totalPrice || 0}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${hist.status === 'completed' ? 'text-gray-400' : hist.status === 'cancelled' ? 'text-red-500' : 'text-orange-500'}`}>
+                                {hist.status === 'completed' ? 'Done' : hist.status === 'cancelled' ? 'Cancelled' : 'Upcoming'}
                             </span>
                             </div>
                         </div>
@@ -494,19 +584,24 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                     if (!dateString) return <div key={`empty-${i}`} className="aspect-square md:aspect-[4/3]" />;
                     const dayNum = parseInt(dateString.split('-')[2]);
                     const dayBookings = bookings.filter(b => b.date === dateString);
-                    const hasPending = dayBookings.some(b => b.status !== "completed");
+                    const isClosed = dayBookings.some(b => b.status === "closed_day");
+                    const validAppts = dayBookings.filter(b => b.status !== "closed_day" && b.status !== "cancelled");
+                    const hasPending = validAppts.some(b => b.status !== "completed");
                     
                     return (
-                      <button key={dateString} onClick={() => openDaySchedule(dateString)} className={`relative aspect-square md:aspect-[4/3] rounded-sm flex flex-col items-center md:items-start justify-center md:justify-start md:p-4 transition-all duration-300 border group ${dayBookings.length > 0 ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:scale-105 shadow-md z-10' : 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:bg-white text-gray-600'}`}>
-                        <span className="text-lg md:text-xl font-bold">{dayNum}</span>
-                        {dayBookings.length > 0 && (
+                      <button key={dateString} onClick={() => openDaySchedule(dateString)} className={`relative aspect-square md:aspect-[4/3] rounded-sm flex flex-col items-center md:items-start justify-center md:justify-start md:p-4 transition-all duration-300 border group ${isClosed ? 'bg-red-50 border-red-200 text-red-500 cursor-not-allowed hover:bg-red-100' : validAppts.length > 0 ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:scale-105 shadow-md z-10' : 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:bg-white text-gray-600'}`}>
+                        <div className="flex w-full justify-between items-start">
+                            <span className="text-lg md:text-xl font-bold">{dayNum}</span>
+                            {isClosed && <Lock size={12} className="text-red-400 mt-1 md:mt-1.5" />}
+                        </div>
+                        {validAppts.length > 0 && !isClosed && (
                           <div className="mt-auto hidden md:flex flex-col w-full gap-1">
                             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm text-left truncate ${hasPending ? 'bg-white text-[#1A1A1A]' : 'bg-white/20 text-white'}`}>
-                              {dayBookings.length} Appt{dayBookings.length > 1 ? 's' : ''}
+                              {validAppts.length} Appt{validAppts.length > 1 ? 's' : ''}
                             </span>
                           </div>
                         )}
-                        {dayBookings.length > 0 && <div className={`absolute bottom-2 w-2 h-2 rounded-full md:hidden ${hasPending ? 'bg-white' : 'bg-white/30'}`} />}
+                        {validAppts.length > 0 && !isClosed && <div className={`absolute bottom-2 w-2 h-2 rounded-full md:hidden ${hasPending ? 'bg-white' : 'bg-white/30'}`} />}
                       </button>
                     );
                   })}
@@ -515,31 +610,34 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
         ) : (
             <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-gray-200 rounded-sm p-8 shadow-sm">
                 <h2 className="text-2xl font-light uppercase text-[#1A1A1A] mb-8">All Bookings</h2>
-                {bookings.length === 0 ? (
+                {bookings.filter(b => b.status !== "closed_day").length === 0 ? (
                     <p className="text-gray-400 text-sm font-medium">No bookings have been made yet.</p>
                 ) : (
                     <div className="space-y-4">
-                        {bookings.map(booking => (
-                            <div key={booking.id} onClick={() => openClientDetails(booking)} className={`flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-sm hover:bg-gray-50 transition-all cursor-pointer gap-4 ${booking.isDay2Ghost ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-200'}`}>
-                                <div>
-                                    <div className="flex items-center gap-3">
-                                      <h4 className="text-base font-bold text-[#1A1A1A]">{booking.customerName}</h4>
-                                      {booking.isDay2Ghost && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Auto-Block</span>}
+                        {bookings.filter(b => b.status !== "closed_day").map(booking => {
+                            const isCancelled = booking.status === "cancelled";
+                            return (
+                                <div key={booking.id} onClick={() => openClientDetails(booking)} className={`flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-sm hover:bg-gray-50 transition-all cursor-pointer gap-4 ${isCancelled ? 'border-gray-200 bg-gray-50 opacity-70 grayscale' : booking.isDay2Ghost ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-200'}`}>
+                                    <div>
+                                        <div className="flex items-center gap-3">
+                                        <h4 className={`text-base font-bold ${isCancelled ? 'text-gray-500 line-through' : 'text-[#1A1A1A]'}`}>{booking.customerName}</h4>
+                                        {booking.isDay2Ghost && !isCancelled && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Auto-Block</span>}
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mt-1">{booking.serviceName}</p>
                                     </div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mt-1">{booking.serviceName}</p>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600">
+                                        <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-gray-400" /> {booking.date}</div>
+                                        <div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400" /> {booking.time}</div>
+                                    </div>
+                                    <div className="text-right flex items-center justify-between md:block">
+                                        <span className={`text-sm font-black block ${isCancelled ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
+                                        <span className={`text-[10px] uppercase tracking-widest font-black ${booking.status === "completed" ? "text-gray-400" : isCancelled ? "text-red-500" : "text-orange-500"}`}>
+                                            {booking.status === "completed" ? "Done" : isCancelled ? "Cancelled" : "Upcoming"}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600">
-                                    <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-gray-400" /> {booking.date}</div>
-                                    <div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400" /> {booking.time}</div>
-                                </div>
-                                <div className="text-right flex items-center justify-between md:block">
-                                    <span className="text-sm font-black block text-[#1A1A1A]">{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
-                                    <span className={`text-[10px] uppercase tracking-widest font-black ${booking.status === "completed" ? "text-gray-400" : "text-orange-500"}`}>
-                                        {booking.status === "completed" ? "Done" : "Upcoming"}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </motion.div>

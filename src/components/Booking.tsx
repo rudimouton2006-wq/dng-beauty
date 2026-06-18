@@ -75,6 +75,7 @@ export default function Booking() {
   });
   
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [isDayClosed, setIsDayClosed] = useState(false); // NEW STATE FOR CLOSED DAYS
   const [isCheckingSlots, setIsCheckingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
@@ -94,9 +95,11 @@ export default function Booking() {
   const today = new Date().toISOString().split('T')[0];
   const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
 
+  // THE CHECK SLOT ENGINE
   useEffect(() => {
     if (!bookingData.date) {
       setBookedSlots([]);
+      setIsDayClosed(false);
       return;
     }
 
@@ -109,16 +112,24 @@ export default function Booking() {
         const snapshot = await getDocs(q);
         
         const taken: string[] = [];
+        let dayClosed = false;
+
         snapshot.forEach(doc => {
           const data = doc.data();
-          if (data.booking_status !== "cancelled" && data.status !== "cancelled") {
+          if (data.status === "closed_day") {
+            // Admin locked this day
+            dayClosed = true;
+          } else if (data.status !== "cancelled" && data.booking_status !== "cancelled") {
+            // Ignore cancelled slots, push taken ones
             taken.push(data.time);
           }
         });
         
         if (isMounted) {
+          setIsDayClosed(dayClosed);
           setBookedSlots(taken);
-          if (taken.includes(bookingData.time)) {
+          if (dayClosed || taken.includes(bookingData.time)) {
+            // Clear their selected time if it's taken or the day is closed
             setBookingData(prev => ({ ...prev, time: "" }));
           }
         }
@@ -202,12 +213,9 @@ export default function Booking() {
 
       const bookingsRef = collection(db, "bookings");
       
-      // 1. Create the primary booking (Day 1)
       const docRef = await addDoc(bookingsRef, finalBookingData);
 
-      // 2. THE MASTERCLASS GHOST BLOCKER LOGIC
       if (isMasterclass) {
-          // Calculate tomorrow's date based on the chosen date
           const nextDay = new Date(bookingData.date);
           nextDay.setDate(nextDay.getDate() + 1);
           const nextDayString = nextDay.toISOString().split('T')[0];
@@ -219,7 +227,6 @@ export default function Booking() {
               isDay2Ghost: true,
               parentBookingId: docRef.id
           };
-          // Silently block the exact same time slot on Day 2 in the database
           await addDoc(bookingsRef, day2Data);
       }
 
@@ -392,7 +399,17 @@ export default function Booking() {
                       {isCheckingSlots && <Loader2 size={12} className="animate-spin text-gray-400" />}
                     </div>
                     
-                    {isMasterclass && (
+                    {/* CLOSED DAY ALERT MESSAGE */}
+                    {isDayClosed && (
+                        <div className="mb-4 p-3 border border-red-200 bg-red-50 rounded-sm flex items-start gap-2">
+                            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={14} />
+                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest leading-relaxed">
+                            This date is currently closed and unavailable for bookings.
+                            </p>
+                        </div>
+                    )}
+
+                    {isMasterclass && !isDayClosed && (
                       <div className="mb-4 p-3 border border-gray-200 bg-gray-50 rounded-sm flex items-start gap-2">
                         <AlertCircle className="text-gray-500 shrink-0 mt-0.5" size={14} />
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
@@ -405,14 +422,14 @@ export default function Booking() {
                       {timeSlots.map(t => {
                         const isTaken = bookedSlots.includes(t);
                         const isMasterclassLocked = isMasterclass && t !== "09:00";
-                        const isDisabled = isTaken || isMasterclassLocked;
+                        const isDisabled = isTaken || isMasterclassLocked || isDayClosed;
 
                         return (
                           <button 
                             key={t} disabled={isDisabled}
                             onClick={() => setBookingData({...bookingData, time: t})}
                             className={`py-4 text-[11px] font-bold tracking-widest uppercase border rounded-sm transition-all duration-300 ${
-                              isTaken 
+                              isTaken || isDayClosed
                                 ? 'bg-gray-50 text-gray-300 line-through border-gray-100 cursor-not-allowed' 
                                 : bookingData.time === t 
                                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' 
