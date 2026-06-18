@@ -29,7 +29,7 @@ const Artist = memo(function Artist() {
           />
         </motion.div>
 
-        {/* Text Side - Updated with Gabby's new bio */}
+        {/* Text Side - Updated with Gabby's exact bio from WhatsApp */}
         <motion.div 
           initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
           className="w-full lg:w-1/2 flex flex-col justify-center"
