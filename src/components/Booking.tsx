@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import React, { useState, useEffect } from "react";
-import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Clock, ClipboardList, Wallet } from "lucide-react";
+import { MessageSquare, Calendar, Check, ArrowRight, Phone, Instagram, MapPin, Loader2, AlertCircle, CreditCard, Clock, ClipboardList, Wallet, CheckCircle2 } from "lucide-react";
 import { db, handleFirestoreError } from "../lib/firebase";
 import type { OperationType } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
@@ -20,9 +20,7 @@ interface Service {
   isMasterclass?: boolean;
 }
 
-// Completely updated and mapped to the official 2026 Price List
 const BOOKABLE_SERVICES: Service[] = [
-  // FULL SETS (Extensions)
   { id: "ext-classics", name: "Classics - Full Set", price: "R350", category: "Full Sets", duration: "3 Hours" },
   { id: "ext-classics-cat", name: "Classics - Cat Eye", price: "R380", category: "Full Sets", duration: "3 Hours" },
   { id: "ext-mega", name: "Mega Classics - Full Set", price: "R370", category: "Full Sets", duration: "3 Hours" },
@@ -30,8 +28,6 @@ const BOOKABLE_SERVICES: Service[] = [
   { id: "ext-hybrids-cat", name: "Hybrids - Cat Eye", price: "R420", category: "Full Sets", duration: "3 Hours" },
   { id: "ext-vol", name: "Volume - Full Set", price: "R450", category: "Full Sets", duration: "3 Hours" },
   { id: "ext-wispy", name: "Wispy + Spikes - Full Set", price: "R500", category: "Full Sets", duration: "3 Hours" },
-
-  // FILLS (Extensions)
   { id: "fill-classics-2", name: "Classics - 2-3 Wk Fill", price: "R250", category: "Fills", duration: "2 Hours" },
   { id: "fill-classics-3", name: "Classics - 3-4 Wk Fill", price: "R300", category: "Fills", duration: "2 Hours" },
   { id: "fill-mega-2", name: "Mega Classics - 2-3 Wk Fill", price: "R270", category: "Fills", duration: "2 Hours" },
@@ -42,8 +38,6 @@ const BOOKABLE_SERVICES: Service[] = [
   { id: "fill-vol-3", name: "Volume - 3-4 Wk Fill", price: "R400", category: "Fills", duration: "2 Hours" },
   { id: "fill-wispy-2", name: "Wispy + Spikes - 2-3 Wk Fill", price: "R390", category: "Fills", duration: "2 Hours" },
   { id: "fill-wispy-3", name: "Wispy + Spikes - 3-4 Wk Fill", price: "R400", category: "Fills", duration: "2 Hours" },
-
-  // CLUSTERS
   { id: "clu-classics", name: "Clusters - Classics", price: "R150", category: "Clusters", duration: "30 Min" },
   { id: "clu-classics-cat", name: "Clusters - Classic Cat Eye", price: "R160", category: "Clusters", duration: "30 Min" },
   { id: "clu-hybrids", name: "Clusters - Hybrids", price: "R170", category: "Clusters", duration: "30 Min" },
@@ -51,14 +45,10 @@ const BOOKABLE_SERVICES: Service[] = [
   { id: "clu-vol", name: "Clusters - Volume", price: "R200", category: "Clusters", duration: "30 Min" },
   { id: "clu-vol-cat", name: "Clusters - Volume Cat Eye", price: "R220", category: "Clusters", duration: "30 Min" },
   { id: "clu-wispy", name: "Clusters - Wispy Set", price: "R250", category: "Clusters", duration: "30 Min" },
-
-  // ADD-ONS
   { id: "add-brow", name: "Brow Shape", price: "R50", category: "Add-Ons", duration: "30 Min" },
   { id: "add-brow-tint", name: "Brow Shape + Tint", price: "R100", category: "Add-Ons", duration: "1 Hour" },
   { id: "add-brow-lam", name: "Brow Lamination + Free Tint", price: "R300", category: "Add-Ons", duration: "45 Min" },
   { id: "add-lash-lift", name: "Lash Lift", price: "R350", category: "Add-Ons", duration: "60 Min" },
-
-  // MASTERCLASS (Price successfully updated to R3500)
   { id: "m-class", name: "2-Day Lash Masterclass", price: "R3500", category: "Training", duration: "2 Days", isMasterclass: true }
 ];
 
@@ -90,7 +80,6 @@ export default function Booking() {
   const [submissionError, setSubmissionError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<'gateway' | 'eft' | 'cash'>('gateway');
 
-  // Minimalist, lightning-fast animations
   const fadeUp = {
     hidden: { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
@@ -100,7 +89,7 @@ export default function Booking() {
   const selectedServiceObj = BOOKABLE_SERVICES.find(s => s.id === bookingData.serviceId);
   const isMasterclass = selectedServiceObj?.isMasterclass || false;
   
-  const depositAmount = isMasterclass ? 1500 : 200; // Updated Masterclass deposit logic
+  const isExemptFromTechnical = isMasterclass || bookingData.serviceName.toLowerCase().includes('brow');
 
   const today = new Date().toISOString().split('T')[0];
   const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
@@ -112,7 +101,6 @@ export default function Booking() {
     }
 
     let isMounted = true;
-    
     const fetchTakenSlots = async () => {
       setIsCheckingSlots(true);
       try {
@@ -157,6 +145,16 @@ export default function Booking() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const resetBooking = () => {
+    setBookingData({
+        serviceId: "", serviceName: "", date: "", time: "", customerName: "",
+        customerEmail: "", customerPhone: "", eyeShape: "Almond", lashStyle: "Classic",
+        preferredMapping: "Cat Eye", allergies: "", consent: false, totalPrice: 0
+    });
+    setStep(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneClean = bookingData.customerPhone.replace(/[\s-]/g, '');
@@ -188,12 +186,14 @@ export default function Booking() {
 
       const finalBookingData = {
         ...bookingData, 
+        eyeShape: isExemptFromTechnical ? "N/A" : bookingData.eyeShape,
+        preferredMapping: isExemptFromTechnical ? "N/A" : bookingData.preferredMapping,
+        allergies: isExemptFromTechnical ? "N/A" : bookingData.allergies,
         booking_status: "pending_deposit", 
         status: "pending",             
         depositPaid: false,          
         paymentMethod: "Pending",    
-        deposit_required: depositAmount,
-        cancellation_eligibility: "eligible",
+        deposit_required: "Variable",
         appointment_timestamp: appointmentDateTime.toISOString(),
         cancellation_deadline: cancelDeadline.toISOString(),
         createdAt: serverTimestamp(),
@@ -201,7 +201,27 @@ export default function Booking() {
       };
 
       const bookingsRef = collection(db, "bookings");
-      await addDoc(bookingsRef, finalBookingData);
+      
+      // 1. Create the primary booking (Day 1)
+      const docRef = await addDoc(bookingsRef, finalBookingData);
+
+      // 2. THE MASTERCLASS GHOST BLOCKER LOGIC
+      if (isMasterclass) {
+          // Calculate tomorrow's date based on the chosen date
+          const nextDay = new Date(bookingData.date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayString = nextDay.toISOString().split('T')[0];
+
+          const day2Data = {
+              ...finalBookingData,
+              date: nextDayString,
+              serviceName: `${bookingData.serviceName} (Day 2 Execution)`,
+              isDay2Ghost: true,
+              parentBookingId: docRef.id
+          };
+          // Silently block the exact same time slot on Day 2 in the database
+          await addDoc(bookingsRef, day2Data);
+      }
 
       try {
         await emailjs.send(
@@ -213,12 +233,12 @@ export default function Booking() {
             client_email: bookingData.customerEmail,
             client_phone: bookingData.customerPhone,
             service: bookingData.serviceName,
-            eye_shape: bookingData.eyeShape,
-            mapping: bookingData.preferredMapping,
-            allergies: bookingData.allergies || "None",
+            eye_shape: isExemptFromTechnical ? "N/A" : bookingData.eyeShape,
+            mapping: isExemptFromTechnical ? "N/A" : bookingData.preferredMapping,
+            allergies: isExemptFromTechnical ? "N/A" : (bookingData.allergies || "None"),
             date: bookingData.date,
             time: bookingData.time,
-            deposit: `R${depositAmount}`
+            deposit: `Pending Selection`
           },
           "GtUm7K5L3axEdq-Zt"                
         );
@@ -253,7 +273,7 @@ export default function Booking() {
       `DTSTART:${formatDate(startDate)}`, `DTEND:${formatDate(endDate)}`,
       `SUMMARY:DnG Beauty: ${serviceName}`,
       `DESCRIPTION:Appointment for ${serviceName} at DnG Beauty Cape Town.`,
-      'LOCATION:Cape Town, South Africa',
+      'LOCATION:38 Welkom Street, Portlands, Mitchells Plain',
       'END:VEVENT', 'END:VCALENDAR'
     ].join('\r\n');
 
@@ -271,7 +291,7 @@ export default function Booking() {
     <div className="pt-32 pb-32 bg-[#FAF9F6] min-h-screen font-sans text-[#1A1A1A]">
       <div className="max-w-7xl mx-auto px-6 lg:px-20">
         
-        {/* Minimalist Header Section */}
+        {/* Header Section */}
         <div className="max-w-3xl mx-auto text-center mb-20">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} style={{ willChange: "opacity, transform" }}>
             <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 mb-6 block">Reservation</span>
@@ -279,24 +299,12 @@ export default function Booking() {
             <p className="text-gray-500 text-lg font-light max-w-md mx-auto leading-relaxed tracking-wide">
               Follow the simple steps below to reserve your appointment.
             </p>
-            
-            <div className="flex justify-center mt-8">
-               <button 
-                 onClick={() => {
-                   const msg = "Hi Gabby! I'd like to inquire about a booking at DnG Beauty.";
-                   window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
-                 }}
-                 className="flex items-center justify-center gap-3 bg-transparent border border-gray-300 text-gray-500 hover:text-[#1A1A1A] hover:border-[#1A1A1A] px-8 py-3 text-[10px] tracking-widest uppercase font-bold transition-all rounded-sm"
-               >
-                 <MessageSquare size={14} /> Prefer WhatsApp?
-               </button>
-            </div>
           </motion.div>
         </div>
 
-        {/* Minimalist Stepper */}
+        {/* Stepper */}
         <div className="max-w-3xl mx-auto mb-16 border-b border-gray-200 pb-6 flex justify-between">
-            {['Service', 'Schedule', 'Consultation', 'Secure'].map((label, index) => {
+            {['Service', 'Schedule', 'Consultation', 'Confirm'].map((label, index) => {
                 const s = index + 1;
                 const isActive = step === s;
                 const isPast = step > s;
@@ -313,15 +321,14 @@ export default function Booking() {
             })}
         </div>
 
-        {/* Interactive Booking Container */}
+        {/* Booking Container */}
         <div className="max-w-3xl mx-auto relative min-h-[400px]">
           <AnimatePresence mode="wait">
             
-            {/* STEP 1: Select Service (With Category Tabs) */}
+            {/* STEP 1: Select Service */}
             {step === 1 && (
               <motion.div key="step1" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-8" style={{ willChange: "opacity, transform" }}>
                 
-                {/* Horizontal Category Selector */}
                 <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-4 border-b border-gray-100">
                     {SERVICE_CATEGORIES.map(category => (
                         <button
@@ -338,7 +345,6 @@ export default function Booking() {
                     ))}
                 </div>
 
-                {/* Filtered Services List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {BOOKABLE_SERVICES.filter(s => s.category === activeTab).map((s) => (
                     <button 
@@ -367,7 +373,7 @@ export default function Booking() {
                       <span className="text-[9px] tracking-widest uppercase font-bold text-gray-400 block mb-1">Selected</span>
                       <h4 className="text-lg font-medium">{bookingData.serviceName}</h4>
                    </div>
-                   <button onClick={() => setStep(1)} className="text-[9px] tracking-widest uppercase font-bold text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-gray-300 hover:border-[#1A1A1A] pb-0.5">Edit</button>
+                   <button onClick={resetBooking} className="text-[9px] tracking-widest uppercase font-bold text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-gray-300 hover:border-[#1A1A1A] pb-0.5">Edit</button>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-10">
@@ -390,7 +396,7 @@ export default function Booking() {
                       <div className="mb-4 p-3 border border-gray-200 bg-gray-50 rounded-sm flex items-start gap-2">
                         <AlertCircle className="text-gray-500 shrink-0 mt-0.5" size={14} />
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-                          Masterclasses require a 09:00 AM start.
+                          Masterclasses require a 09:00 AM start. Day 2 will be blocked automatically.
                         </p>
                       </div>
                     )}
@@ -421,11 +427,18 @@ export default function Booking() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
+                    <button 
+                        type="button" 
+                        onClick={resetBooking} 
+                        className="px-6 py-5 bg-transparent border border-gray-200 text-red-500 font-bold uppercase tracking-widest text-[10px] rounded-sm hover:border-red-500 hover:bg-red-50 transition-colors"
+                    >
+                        Cancel Booking
+                    </button>
                     <button 
                         disabled={!bookingData.date || !bookingData.time}
                         onClick={() => { setStep(3); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                        className="w-full flex items-center justify-between p-5 bg-[#1A1A1A] text-white font-bold uppercase tracking-widest text-[10px] rounded-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+                        className="flex-1 flex items-center justify-center p-5 bg-[#1A1A1A] text-white font-bold uppercase tracking-widest text-[10px] rounded-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
                     >
                         Continue to Consultation <ArrowRight size={14} />
                     </button>
@@ -433,7 +446,7 @@ export default function Booking() {
               </motion.div>
             )}
 
-            {/* STEP 3: Client Details & Lash Consultation */}
+            {/* STEP 3: Client Details */}
             {step === 3 && (
               <motion.div key="step3" variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="space-y-10" style={{ willChange: "opacity, transform" }}>
                 
@@ -465,63 +478,68 @@ export default function Booking() {
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <h3 className="text-[10px] tracking-widest uppercase font-bold text-gray-400 border-b border-gray-200 pb-2 flex items-center gap-2">
-                        <ClipboardList size={12}/> Technical Requirements
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Eye Shape</label>
-                        <select 
-                          disabled={isSubmitting} value={bookingData.eyeShape} onChange={(e) => setBookingData({...bookingData, eyeShape: e.target.value})}
-                          className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
-                        >
-                          <option value="Almond">Almond</option>
-                          <option value="Round">Round</option>
-                          <option value="Hooded">Hooded</option>
-                          <option value="Deep Set">Deep Set</option>
-                          <option value="Monolid">Monolid</option>
-                          <option value="Downturned">Downturned</option>
-                          <option value="Upturned">Upturned</option>
-                          <option value="Not Sure">Not Sure</option>
-                        </select>
+                  {!isExemptFromTechnical && (
+                    <div className="space-y-6">
+                      <h3 className="text-[10px] tracking-widest uppercase font-bold text-gray-400 border-b border-gray-200 pb-2 flex items-center gap-2">
+                          <ClipboardList size={12}/> Technical Requirements
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Eye Shape</label>
+                          <select 
+                            disabled={isSubmitting} value={bookingData.eyeShape} onChange={(e) => setBookingData({...bookingData, eyeShape: e.target.value})}
+                            className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
+                          >
+                            <option value="Almond">Almond</option>
+                            <option value="Round">Round</option>
+                            <option value="Hooded">Hooded</option>
+                            <option value="Deep Set">Deep Set</option>
+                            <option value="Monolid">Monolid</option>
+                            <option value="Downturned">Downturned</option>
+                            <option value="Upturned">Upturned</option>
+                            <option value="Not Sure">Not Sure</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Preferred Mapping</label>
+                          <select 
+                            disabled={isSubmitting} value={bookingData.preferredMapping} onChange={(e) => setBookingData({...bookingData, preferredMapping: e.target.value})}
+                            className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
+                          >
+                            <option value="Cat Eye">Cat Eye</option>
+                            <option value="Doll Eye">Doll Eye</option>
+                            <option value="Open Eye">Open Eye</option>
+                            <option value="Squirrel Eye">Squirrel Eye</option>
+                            <option value="Recommend For Me">Recommend For Me</option>
+                          </select>
+                        </div>
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Preferred Mapping</label>
-                        <select 
-                          disabled={isSubmitting} value={bookingData.preferredMapping} onChange={(e) => setBookingData({...bookingData, preferredMapping: e.target.value})}
-                          className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors cursor-pointer text-sm"
-                        >
-                          <option value="Cat Eye">Cat Eye</option>
-                          <option value="Doll Eye">Doll Eye</option>
-                          <option value="Open Eye">Open Eye</option>
-                          <option value="Squirrel Eye">Squirrel Eye</option>
-                          <option value="Recommend For Me">Recommend For Me</option>
-                        </select>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Allergies / Sensitivities</label>
+                        <textarea 
+                          disabled={isSubmitting} rows={2} placeholder="Leave blank if none..." value={bookingData.allergies} onChange={(e) => setBookingData({...bookingData, allergies: e.target.value})}
+                          className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors resize-none placeholder:text-gray-300 text-sm"
+                        />
                       </div>
                     </div>
+                  )}
 
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Allergies / Sensitivities</label>
-                      <textarea 
-                        disabled={isSubmitting} rows={2} placeholder="Leave blank if none..." value={bookingData.allergies} onChange={(e) => setBookingData({...bookingData, allergies: e.target.value})}
-                        className="w-full p-4 border border-gray-200 outline-none bg-white font-medium rounded-sm focus:border-[#1A1A1A] transition-colors resize-none placeholder:text-gray-300 text-sm"
-                      />
-                    </div>
-
-                    <div className="flex items-start gap-4 pt-4">
-                      <input 
-                        type="checkbox" id="consent" required disabled={isSubmitting} checked={bookingData.consent} onChange={(e) => setBookingData({...bookingData, consent: e.target.checked})}
-                        className="mt-1 w-4 h-4 accent-[#1A1A1A] cursor-pointer"
-                      />
-                      <label htmlFor="consent" className="text-[11px] font-bold uppercase tracking-widest leading-relaxed text-gray-500 cursor-pointer">
-                        I confirm the above details are accurate & agree to studio terms.
-                      </label>
-                    </div>
+                  <div className="flex items-start gap-4 pt-4">
+                    <input 
+                      type="checkbox" id="consent" required disabled={isSubmitting} checked={bookingData.consent} onChange={(e) => setBookingData({...bookingData, consent: e.target.checked})}
+                      className="mt-1 w-4 h-4 accent-[#1A1A1A] cursor-pointer"
+                    />
+                    <label htmlFor="consent" className="text-[11px] font-bold uppercase tracking-widest leading-relaxed text-gray-500 cursor-pointer">
+                      I confirm the above details are accurate & agree to studio terms.
+                    </label>
                   </div>
                   
-                  <div className="flex gap-4 pt-6 border-t border-gray-100">
+                  <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
+                    <button type="button" onClick={resetBooking} className="px-6 py-5 bg-transparent border border-gray-200 text-red-500 font-bold uppercase tracking-widest text-[10px] rounded-sm hover:border-red-500 hover:bg-red-50 transition-colors">
+                        Cancel Booking
+                    </button>
                     <button type="button" onClick={() => setStep(2)} className="px-6 py-5 bg-transparent border border-gray-200 text-gray-500 font-bold uppercase tracking-widest text-[10px] rounded-sm hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors">
                         Back
                     </button>
@@ -533,16 +551,17 @@ export default function Booking() {
               </motion.div>
             )}
 
-            {/* STEP 4: Success & Payment Options (Including Cash) */}
+            {/* STEP 4: Success & Payment Options */}
             {step === 4 && (
               <motion.div key="step4" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6" style={{ willChange: "opacity, transform" }}>
-                <div className="w-16 h-16 border border-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                   <AlertCircle className="text-[#1A1A1A]" size={24} strokeWidth={1} />
+                
+                <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                   <CheckCircle2 size={32} strokeWidth={1.5} />
                 </div>
-                <h2 className="text-3xl font-light mb-4 text-[#1A1A1A] uppercase tracking-wide">Action Required</h2>
+                <h2 className="text-3xl font-light mb-4 text-[#1A1A1A] uppercase tracking-wide">Booking Confirmed</h2>
                 
                 <p className="text-gray-500 font-light mb-10 max-w-sm mx-auto leading-relaxed text-sm">
-                  Your details are logged. To officially secure your session, a <strong className="font-bold text-[#1A1A1A]">R{depositAmount}</strong> deposit is required.
+                  Your appointment has been successfully secured! Please review your preferred payment choices below to finalize your session.
                 </p>
 
                 <div className="flex flex-wrap bg-gray-50 p-1 rounded-sm mb-10 border border-gray-200">
@@ -553,23 +572,23 @@ export default function Booking() {
                     Manual EFT
                   </button>
                   <button onClick={() => setPaymentMethod('cash')} className={`flex-1 py-3 px-2 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all duration-300 ${paymentMethod === 'cash' ? 'bg-[#1A1A1A] shadow-sm text-white' : 'text-gray-400 hover:text-[#1A1A1A]'}`}>
-                    Pay Cash
+                    Pay on the Day
                   </button>
                 </div>
 
                 <AnimatePresence mode="wait">
                   {paymentMethod === 'gateway' && (
-                    <motion.div key="gateway" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center border border-gray-200 p-8 rounded-sm">
+                    <motion.div key="gateway" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center border border-gray-200 p-8 rounded-sm bg-white">
                       <CreditCard className="mx-auto mb-4 text-gray-300" size={32} strokeWidth={1} />
-                      <p className="text-sm font-light text-gray-500 mb-8 max-w-xs mx-auto">Pay securely using card or instant EFT via our encrypted gateway.</p>
+                      <p className="text-sm font-light text-gray-500 mb-8 max-w-xs mx-auto">Pay securely using your card or instant EFT via our encrypted gateway.</p>
                       <button onClick={() => window.open("https://pay.yoco.com/dng-beauty", "_blank")} className="w-full py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm">
-                        Pay R{depositAmount} Securely
+                        Pay Securely Online
                       </button>
                     </motion.div>
                   )}
 
                   {paymentMethod === 'eft' && (
-                    <motion.div key="eft" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-left border border-gray-200 p-8 rounded-sm">
+                    <motion.div key="eft" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-left border border-gray-200 p-8 rounded-sm bg-white">
                       <div className="space-y-4 mb-8">
                         <div className="flex justify-between border-b border-gray-100 pb-2">
                           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Bank</span>
@@ -604,15 +623,14 @@ export default function Booking() {
                     </motion.div>
                   )}
 
-                  {/* NEW CASH PAYMENT OPTION */}
                   {paymentMethod === 'cash' && (
                     <motion.div key="cash" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center border border-[#1A1A1A] bg-white p-8 rounded-sm">
                       <Wallet className="mx-auto mb-4 text-[#1A1A1A]" size={32} strokeWidth={1} />
                       <p className="text-sm font-light text-[#1A1A1A] mb-8 max-w-xs mx-auto leading-relaxed">
-                        You have opted to pay in cash. Please bring the exact amount to the studio on the day of your appointment.
+                        You have opted to pay on the day of your appointment. You may settle the balance via <strong className="font-bold">Cash or EFT</strong> at the studio.
                       </p>
                       <button onClick={() => {
-                          const msg = `Hi Gabby! I just booked ${bookingData.serviceName} for ${bookingData.date} @ ${bookingData.time} on the website. I have opted to pay in cash on the day!`;
+                          const msg = `Hi Gabby! I just booked ${bookingData.serviceName} for ${bookingData.date} @ ${bookingData.time} on the website. I have opted to pay on the day (Cash/EFT)!`;
                           window.open(`https://wa.me/27787030732?text=${encodeURIComponent(msg)}`, "_blank");
                         }} 
                         className="w-full py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm flex items-center justify-center gap-2"
@@ -623,35 +641,27 @@ export default function Booking() {
                   )}
                 </AnimatePresence>
 
-                <button onClick={addToCalendar} className="mt-8 text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-transparent hover:border-[#1A1A1A] pb-1 flex items-center justify-center gap-2 mx-auto">
-                  <Calendar size={12} /> Add to Personal Calendar
-                </button>
+                <div className="mt-12 p-8 border border-gray-200 bg-white rounded-sm text-center shadow-sm relative overflow-hidden">
+                   <div className="absolute top-0 left-0 w-full h-1 bg-[#1A1A1A]"></div>
+                   <MapPin className="mx-auto mb-4 text-[#1A1A1A]" size={28} strokeWidth={1.5} />
+                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Studio Location</h3>
+                   <p className="font-medium text-[#1A1A1A] text-lg lg:text-xl tracking-tight mb-1">38 Welkom Street</p>
+                   <p className="text-gray-500 font-light text-sm lg:text-base">Portlands, Mitchells Plain, Cape Town</p>
+                   <p className="text-gray-400 text-xs mt-6 italic bg-gray-50 py-3 rounded-sm">Please arrive with clean eyes entirely free of makeup.</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+                  <button onClick={resetBooking} className="text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-transparent hover:border-[#1A1A1A] pb-1 px-4">
+                    Book Another Service
+                  </button>
+                  <button onClick={addToCalendar} className="text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-[#1A1A1A] transition-colors border-b border-transparent hover:border-[#1A1A1A] pb-1 flex items-center justify-center gap-2 px-4">
+                    <Calendar size={12} /> Add to Personal Calendar
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Minimalist Studio Info Section */}
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="mt-32 grid md:grid-cols-2 gap-16 border-t border-gray-200 pt-20">
-           <div>
-              <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 mb-4 block">Our Rules</span>
-              <h3 className="text-2xl font-light mb-6 uppercase text-[#1A1A1A]">Studio Policy.</h3>
-              <div className="space-y-4 text-gray-500 font-light text-sm tracking-wide">
-                 <p className="flex items-start gap-3"><span className="text-[#1A1A1A] mt-1">—</span> Please arrive with clean eyes entirely free of makeup.</p>
-                 <p className="flex items-start gap-3"><span className="text-[#1A1A1A] mt-1">—</span> Cancellations must be made 48 hours prior to your schedule.</p>
-                 <p className="flex items-start gap-3"><span className="text-[#1A1A1A] mt-1">—</span> Cancellations within 1 hour forfeit the deposit entirely.</p>
-              </div>
-           </div>
-           <div>
-              <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400 mb-4 block">Contact Us</span>
-              <h3 className="text-2xl font-light mb-6 uppercase text-[#1A1A1A]">Get in touch.</h3>
-              <div className="space-y-4 text-gray-600 font-medium text-sm tracking-wide">
-                 <a href="tel:+27787030732" className="flex items-center gap-4 hover:text-[#1A1A1A] transition-colors w-fit"><Phone size={14} className="text-gray-400" /> +27 78 703 0732</a>
-                 <a href="https://www.instagram.com/dng_beauty_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 hover:text-[#1A1A1A] transition-colors w-fit"><Instagram size={14} className="text-gray-400" /> @dng_beauty_</a>
-                 <div className="flex items-center gap-4 cursor-default"><MapPin size={14} className="text-gray-400" /> Cape Town, ZA</div>
-              </div>
-           </div>
-        </motion.div>
       </div>
     </div>
   );

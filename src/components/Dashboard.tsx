@@ -18,7 +18,6 @@ interface DashboardProps {
   setPage: (page: string) => void;
 }
 
-// Updated interface to match the new Consultation Form data from Phase 3
 interface BookingRecord {
   id: string;
   serviceName: string;
@@ -27,16 +26,16 @@ interface BookingRecord {
   customerPhone: string;
   date: string; 
   time: string;
-  deposit_required: number;
+  totalPrice?: number; // Uses totalPrice for accurate stats instead of variable deposit string
   status?: "pending" | "completed";
   createdAt: any;
   depositPaid?: boolean; 
-  paymentMethod?: "EFT" | "Gateway" | "Pending";
-  // New Consultation Fields:
+  paymentMethod?: "EFT" | "Gateway" | "Pending" | "Cash";
   eyeShape?: string;
   lashStyle?: string;
   preferredMapping?: string;
   allergies?: string;
+  isDay2Ghost?: boolean; // Identifies automated Masterclass auto-blocks
 }
 
 const fadeUp = {
@@ -134,6 +133,15 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     }
   };
 
+  // 1-CLICK WHATSAPP REMINDER LOGIC
+  const sendWhatsAppReminder = (clientName: string, phone: string, time: string, service: string) => {
+    const formattedPhone = phone.startsWith('0') ? `+27${phone.substring(1)}` : phone;
+    const cleanPhone = formattedPhone.replace(/[\s-]/g, '');
+    const msg = `Hi ${clientName.split(' ')[0]}! ✨ Just a friendly reminder from Gabby at DnG Beauty regarding your appointment tomorrow at ${time} for your ${service}. Please arrive with clean, makeup-free eyes. See you soon!`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  // STATS CALCULATION (Fixed to use totalPrice instead of deposit)
   const stats = useMemo(() => {
     const currentMonthNum = currentMonth.getMonth();
     const currentYearNum = currentMonth.getFullYear();
@@ -147,15 +155,15 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     bookings.forEach(b => {
       const bDate = new Date(b.date);
       const isCompleted = b.status === "completed";
-      const value = Number(b.deposit_required) || 0; 
+      const value = Number(b.totalPrice) || 0; // Using exact total price
 
-      if (isCompleted) {
+      if (isCompleted && !b.isDay2Ghost) { // Don't double count ghost income
         if (bDate.getMonth() === currentMonthNum && bDate.getFullYear() === currentYearNum) {
           currentIncome += value;
         } else if (bDate.getMonth() === prevMonthNum && bDate.getFullYear() === prevYearNum) {
           prevIncome += value;
         }
-      } else {
+      } else if (!isCompleted) {
         upcomingCount++;
       }
     });
@@ -182,7 +190,7 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
 
   const selectedDayBookings = bookings.filter(b => b.date === selectedDate);
 
-  // 1. Daily Schedule Drawer
+  // 1. Daily Schedule Drawer (With Strict Sorting & Ghost Blockers)
   const DayDrawer = () => {
     if (!isDrawerOpen) return null;
     return createPortal(
@@ -210,13 +218,26 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
               </div>
             ) : (
               <div className="space-y-4 pb-20">
+                {/* STRICT CHRONOLOGICAL SORTING (.sort by time) */}
                 {selectedDayBookings.sort((a, b) => a.time.localeCompare(b.time)).map((booking) => {
                   const isCompleted = booking.status === "completed";
                   return (
                     <motion.div layout key={booking.id} 
                       onClick={() => openClientDetails(booking)}
-                      className={`bg-white border border-gray-200 rounded-sm p-5 shadow-sm transition-all duration-300 cursor-pointer ${isCompleted ? 'opacity-60 grayscale hover:grayscale-0' : 'hover:shadow-md hover:border-gray-400'}`}
+                      className={`relative border rounded-sm p-5 shadow-sm transition-all duration-300 cursor-pointer ${
+                        booking.isDay2Ghost 
+                        ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500 border-indigo-100' // Ghost Style
+                        : isCompleted ? 'bg-white border-l-4 border-l-gray-300 opacity-60 grayscale hover:grayscale-0' // Completed Style
+                        : 'bg-white border-l-4 border-l-[#1A1A1A] border-gray-200 hover:shadow-md hover:border-gray-400' // Default Style
+                      }`}
                     >
+                      {/* GHOST BLOCKER BADGE */}
+                      {booking.isDay2Ghost && (
+                          <div className="absolute top-0 right-0 bg-indigo-100 text-indigo-700 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-sm">
+                              System Auto-Block
+                          </div>
+                      )}
+
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0"><User size={16} className="text-gray-500" /></div>
@@ -226,8 +247,8 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                           </div>
                         </div>
                         <div className="text-right">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Fee</span>
-                            <span className="text-sm font-black text-[#1A1A1A]">R{booking.deposit_required}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Total Fee</span>
+                            <span className="text-sm font-black text-[#1A1A1A]">{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 bg-[#FAF9F6] p-3 rounded-sm border border-gray-100">
@@ -250,8 +271,8 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
   const ClientDetailModal = () => {
     if (!selectedClientBooking) return null;
     
-    const clientHistory = bookings.filter(b => b.customerEmail === selectedClientBooking.customerEmail);
-    const lifetimeValue = clientHistory.filter(b => b.status === 'completed').reduce((sum, b) => sum + Number(b.deposit_required), 0);
+    const clientHistory = bookings.filter(b => b.customerEmail === selectedClientBooking.customerEmail && !b.isDay2Ghost);
+    const lifetimeValue = clientHistory.filter(b => b.status === 'completed').reduce((sum, b) => sum + Number(b.totalPrice || 0), 0);
     const isCompleted = selectedClientBooking.status === 'completed';
 
     return createPortal(
@@ -276,6 +297,13 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
+            {selectedClientBooking.isDay2Ghost && (
+                <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 p-4 rounded-sm flex items-center gap-3">
+                    <AlertCircle size={18} />
+                    <p className="text-xs font-bold uppercase tracking-widest">This is a system-generated block for Day 2 of a Masterclass.</p>
+                </div>
+            )}
+
             <div>
               <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-200 pb-2">Selected Appointment</h3>
               <div className="bg-white border border-gray-200 rounded-sm p-6 shadow-sm">
@@ -289,22 +317,22 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                   </div>
                   <div className="text-left sm:text-right">
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Total Fee</span>
-                    <span className="text-2xl font-black text-[#1A1A1A]">R{selectedClientBooking.deposit_required}</span>
+                    <span className="text-2xl font-black text-[#1A1A1A]">{selectedClientBooking.isDay2Ghost ? 'Included' : `R${selectedClientBooking.totalPrice || 0}`}</span>
                   </div>
                 </div>
 
-                {/* NEW: Lash Consultation Details Section */}
-                <div className="bg-[#FAF9F6] border border-gray-200 rounded-sm p-4 mb-6">
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
-                    <ClipboardList size={14} /> Consultation Form
-                  </h5>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><span className="text-gray-400 block text-xs">Eye Shape:</span><span className="font-bold">{selectedClientBooking.eyeShape || 'N/A'}</span></div>
-                    <div><span className="text-gray-400 block text-xs">Desired Style:</span><span className="font-bold">{selectedClientBooking.lashStyle || 'N/A'}</span></div>
-                    <div><span className="text-gray-400 block text-xs">Mapping:</span><span className="font-bold">{selectedClientBooking.preferredMapping || 'N/A'}</span></div>
-                    <div className="col-span-2"><span className="text-gray-400 block text-xs">Allergies/Notes:</span><span className="font-bold text-orange-600">{selectedClientBooking.allergies || 'None reported'}</span></div>
-                  </div>
-                </div>
+                {!selectedClientBooking.isDay2Ghost && selectedClientBooking.eyeShape !== "N/A" && (
+                    <div className="bg-[#FAF9F6] border border-gray-200 rounded-sm p-4 mb-6">
+                    <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
+                        <ClipboardList size={14} /> Consultation Form
+                    </h5>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div><span className="text-gray-400 block text-xs">Eye Shape:</span><span className="font-bold">{selectedClientBooking.eyeShape || 'N/A'}</span></div>
+                        <div><span className="text-gray-400 block text-xs">Mapping:</span><span className="font-bold">{selectedClientBooking.preferredMapping || 'N/A'}</span></div>
+                        <div className="col-span-2"><span className="text-gray-400 block text-xs">Allergies/Notes:</span><span className="font-bold text-orange-600">{selectedClientBooking.allergies || 'None reported'}</span></div>
+                    </div>
+                    </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
                   <div className="flex-1 bg-gray-50 p-4 rounded-sm border border-gray-200 flex items-center justify-between">
@@ -327,48 +355,52 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                         <CheckCircle2 size={16} /> Completed
                       </div>
                     )}
-                    <button onClick={() => {
-                        const cleanPhone = selectedClientBooking.customerPhone.replace(/\D/g, '');
-                        const msg = `Hi ${selectedClientBooking.customerName.split(' ')[0]}! This is Gabby from DnG Beauty.`;
-                        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank");
-                      }} 
-                      className="px-5 py-3 bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-colors rounded-sm flex items-center justify-center border border-[#25D366]/20"
-                    >
-                        <MessageSquare size={18} />
-                    </button>
+                    
+                    {/* 1-CLICK WHATSAPP REMINDER BUTTON */}
+                    {!selectedClientBooking.isDay2Ghost && (
+                        <button onClick={() => sendWhatsAppReminder(selectedClientBooking.customerName, selectedClientBooking.customerPhone, selectedClientBooking.time, selectedClientBooking.serviceName)} 
+                        className="px-5 py-3 bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-colors rounded-sm flex items-center justify-center border border-[#25D366]/20"
+                        title="Send Reminder via WhatsApp"
+                        >
+                            <MessageSquare size={18} />
+                        </button>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div>
-              <div className="flex justify-between items-end mb-3 border-b border-gray-200 pb-2">
-                <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Client History</h3>
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Value: R{lifetimeValue}</span>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-sm overflow-hidden shadow-sm">
-                {clientHistory.length <= 1 ? (
-                  <div className="p-6 text-center text-sm font-medium text-gray-400">This is the client's first booking.</div>
-                ) : (
-                  <div className="divide-y divide-gray-100 max-h-[250px] overflow-y-auto">
-                    {clientHistory.map(hist => (
-                      <div key={hist.id} className={`p-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${hist.id === selectedClientBooking.id ? 'bg-[#FAF9F6]' : ''}`}>
-                        <div>
-                          <p className="text-sm font-bold text-[#1A1A1A]">{hist.serviceName}</p>
-                          <p className="text-xs font-medium text-gray-500">{hist.date} • {hist.time}</p>
+            {/* Client History Profile */}
+            {!selectedClientBooking.isDay2Ghost && (
+                <div>
+                <div className="flex justify-between items-end mb-3 border-b border-gray-200 pb-2">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Client History</h3>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Value: R{lifetimeValue}</span>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-sm overflow-hidden shadow-sm">
+                    {clientHistory.length <= 1 ? (
+                    <div className="p-6 text-center text-sm font-medium text-gray-400">This is the client's first booking.</div>
+                    ) : (
+                    <div className="divide-y divide-gray-100 max-h-[250px] overflow-y-auto">
+                        {clientHistory.map(hist => (
+                        <div key={hist.id} className={`p-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${hist.id === selectedClientBooking.id ? 'bg-[#FAF9F6]' : ''}`}>
+                            <div>
+                            <p className="text-sm font-bold text-[#1A1A1A]">{hist.serviceName}</p>
+                            <p className="text-xs font-medium text-gray-500">{hist.date} • {hist.time}</p>
+                            </div>
+                            <div className="text-right">
+                            <span className="text-sm font-black text-[#1A1A1A] block">R{hist.totalPrice || 0}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${hist.status === 'completed' ? 'text-gray-400' : 'text-orange-500'}`}>
+                                {hist.status === 'completed' ? 'Done' : 'Upcoming'}
+                            </span>
+                            </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-sm font-black text-[#1A1A1A] block">R{hist.deposit_required}</span>
-                          <span className={`text-[10px] font-black uppercase tracking-widest ${hist.status === 'completed' ? 'text-gray-400' : 'text-orange-500'}`}>
-                            {hist.status === 'completed' ? 'Done' : 'Upcoming'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+                        ))}
+                    </div>
+                    )}
+                </div>
+                </div>
+            )}
           </div>
         </motion.div>
       </div>,
@@ -488,9 +520,12 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                 ) : (
                     <div className="space-y-4">
                         {bookings.map(booking => (
-                            <div key={booking.id} onClick={() => openClientDetails(booking)} className="flex flex-col md:flex-row md:items-center justify-between p-5 border border-gray-200 rounded-sm hover:bg-gray-50 transition-all cursor-pointer gap-4">
+                            <div key={booking.id} onClick={() => openClientDetails(booking)} className={`flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-sm hover:bg-gray-50 transition-all cursor-pointer gap-4 ${booking.isDay2Ghost ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-200'}`}>
                                 <div>
-                                    <h4 className="text-base font-bold text-[#1A1A1A]">{booking.customerName}</h4>
+                                    <div className="flex items-center gap-3">
+                                      <h4 className="text-base font-bold text-[#1A1A1A]">{booking.customerName}</h4>
+                                      {booking.isDay2Ghost && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Auto-Block</span>}
+                                    </div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mt-1">{booking.serviceName}</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600">
@@ -498,7 +533,7 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                                     <div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400" /> {booking.time}</div>
                                 </div>
                                 <div className="text-right flex items-center justify-between md:block">
-                                    <span className="text-sm font-black block text-[#1A1A1A]">R{booking.deposit_required}</span>
+                                    <span className="text-sm font-black block text-[#1A1A1A]">{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
                                     <span className={`text-[10px] uppercase tracking-widest font-black ${booking.status === "completed" ? "text-gray-400" : "text-orange-500"}`}>
                                         {booking.status === "completed" ? "Done" : "Upcoming"}
                                     </span>

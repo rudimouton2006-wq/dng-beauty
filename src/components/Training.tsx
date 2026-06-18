@@ -11,15 +11,15 @@ interface TrainingProps {
   setPage: (page: string) => void;
 }
 
-// Exhaustive lists to prevent client questions
+// Luxury Copywriting: Exhaustive lists with premium terminology
 const CURRICULUM_DAY_1 = [
   "In-depth Lash Theory & Anatomy",
   "Sanitation, Health & Hygiene Standards",
   "Contraindications & Allergies",
-  "Product & Adhesive Knowledge",
+  "Product & Adhesive Chemistry",
   "Eye Shapes & Custom Lash Mapping",
-  "Tweezers Grip & Isolation Techniques",
-  "Hands-on Mannequin Head Practice"
+  "Tweezers Grip & Isolation Precision",
+  "Hands-on Mannequin Execution"
 ];
 
 const CURRICULUM_DAY_2 = [
@@ -27,40 +27,40 @@ const CURRICULUM_DAY_2 = [
   "Client Consultation & Consent Forms",
   "Proper Taping & Eye Pad Placement",
   "Classic & Volume Application on Live Model",
-  "Retention Troubleshooting",
-  "Safe Lash Removals & Fills",
-  "Pricing, Social Media & Business Branding"
+  "Retention Troubleshooting & Analytics",
+  "Safe Lash Removals & Fill Protocols",
+  "Pricing Strategy, Social Media & Brand Identity"
 ];
 
 const KIT_INCLUSIONS = [
-  "Comprehensive Training Manual",
+  "Comprehensive Masterclass Training Manual",
   "Premium Mixed Lash Trays (Classic & Volume)",
-  "Professional Fast-Drying Adhesive",
-  "Lash Primer & Superbonder",
+  "Professional Fast-Drying Retention Adhesive",
+  "Lash Primer & Curing Superbonder",
   "Precision Isolation & Placement Tweezers",
-  "Glass Lash Tile / Palette",
+  "Luxury Glass Lash Tile / Palette",
   "Hydrogel Under-Eye Pads",
   "Medical Grade Tape (Foam & Clear)",
   "Disposable Spoolies & Microbrushes",
-  "Lash Cleansing Bath & Brushes",
+  "Lash Cleansing Bath & Cleansing Brushes",
   "Adhesive Wipes & Glue Rings",
   "Practice Mannequin Head & Sponges"
 ];
 
 const REQUIREMENTS = [
-  "A Live Model for Day 2 (Student must provide)",
+  "A Live Model for Day 2 (Student is responsible for provision)",
   "Comfortable, professional studio attire (Black preferred)",
-  "Notebook and pen for theory notes",
-  "Full balance payment due on the morning of Day 1",
-  "Positive attitude & readiness to learn!"
+  "Notebook and pen for theoretical modules",
+  "Full balance payment due prior to commencement on Day 1",
+  "A dedicated attitude and readiness to master a new craft"
 ];
 
 const INCLUSIONS = [
-  { icon: BookOpen, text: "Full Training Manual" },
-  { icon: Briefcase, text: "Extensive Lash Kit" },
-  { icon: Scissors, text: "Hands-On Practice" },
-  { icon: UserCheck, text: "Live Model Execution" },
-  { icon: Award, text: "Accredited Certificate" },
+  { icon: BookOpen, text: "Comprehensive Manual" },
+  { icon: Briefcase, text: "Premium Lash Kit" },
+  { icon: Scissors, text: "Practical Execution" },
+  { icon: UserCheck, text: "Live Model Evaluation" },
+  { icon: Award, text: "Accredited Certification" },
   { icon: CheckCircle2, text: "Lifetime Mentorship" }
 ];
 
@@ -93,8 +93,9 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                 <h1 className="text-5xl md:text-7xl font-light tracking-tighter mb-8 leading-[1.1] uppercase">
                     Master the Art. <br/> Build Your Empire.
                 </h1>
+                {/* Premium Copywriting Injection */}
                 <p className="text-gray-500 text-lg font-light leading-relaxed mb-10 tracking-wide">
-                    A comprehensive 2-day, hands-on masterclass designed to give you the exact blueprint, premium kit, and technical skills to launch a highly profitable lash career.
+                    An exclusive 2-day, immersive masterclass designed to equip you with the precise technical skills, a premium starter kit, and the industry secrets required to launch a highly profitable beauty enterprise.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-10">
@@ -102,17 +103,16 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                         onClick={() => setPage("booking")}
                         className="px-10 py-4 bg-[#1A1A1A] text-white font-bold tracking-widest uppercase text-[10px] hover:bg-gray-800 transition-colors duration-300 rounded-sm shadow-sm"
                     >
-                        Secure Your Seat
+                        Secure Your Enrollment
                     </button>
-                    {/* Price updated to 3.5k as per Gabby's voice note */}
-                    <span className="text-sm font-bold tracking-widest text-gray-400 uppercase">R3,500 Total</span>
+                    <span className="text-sm font-bold tracking-widest text-gray-400 uppercase">R3,500 Total Investment</span>
                 </div>
 
                 {/* Minimalist Schedule Snippet */}
                 <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A] border-l-2 border-[#1A1A1A] pl-4">
-                    <span>Day 1: Theory & Mannequin</span>
+                    <span>Day 1: Theory & Architecture</span>
                     <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                    <span>Day 2: Live Model</span>
+                    <span>Day 2: Live Model Execution</span>
                 </div>
             </div>
 
@@ -140,8 +140,9 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                 <h2 className="text-4xl md:text-5xl font-light tracking-tighter text-[#1A1A1A] mb-4 uppercase">
                     The Curriculum.
                 </h2>
+                {/* Premium Copywriting Injection */}
                 <p className="text-gray-400 font-light tracking-wide text-lg max-w-2xl mx-auto">
-                    Everything you need is explicitly outlined below. From theory to your physical kit, no details are left behind.
+                    Every fundamental element of lash artistry and business development is explicitly outlined below. From advanced theoretical concepts to the physical tools in your luxury kit, no detail is overlooked.
                 </p>
             </motion.div>
 
@@ -154,7 +155,7 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                     {/* Day 1 */}
                     <div>
                         <span className="text-gray-400 font-bold tracking-widest uppercase text-[10px] mb-4 block border-b border-gray-100 pb-4">
-                            Step 01
+                            Module 01
                         </span>
                         <h3 className="text-2xl font-light text-[#1A1A1A] mb-8 uppercase">Day 1: The Foundation</h3>
                         <ul className="space-y-4">
@@ -170,7 +171,7 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                     {/* Day 2 */}
                     <div>
                         <span className="text-gray-400 font-bold tracking-widest uppercase text-[10px] mb-4 block border-b border-gray-100 pb-4">
-                            Step 02
+                            Module 02
                         </span>
                         <h3 className="text-2xl font-light text-[#1A1A1A] mb-8 uppercase">Day 2: Execution</h3>
                         <ul className="space-y-4">
@@ -191,7 +192,7 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                     {/* The Kit */}
                     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp} className="bg-[#FAF9F6] p-8 border border-gray-200 rounded-sm" style={{ willChange: "opacity, transform" }}>
                         <h3 className="text-xl font-medium text-[#1A1A1A] mb-6 uppercase tracking-wide flex items-center gap-3">
-                            <Briefcase size={18} /> What's Included (Your Kit)
+                            <Briefcase size={18} /> Premium Kit Inclusions
                         </h3>
                         <ul className="space-y-3">
                             {KIT_INCLUSIONS.map((item, idx) => (
@@ -208,7 +209,7 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                         <span className="text-gray-400 font-bold tracking-widest uppercase text-[10px] mb-4 block border-b border-gray-100 pb-4">
                             Preparation
                         </span>
-                        <h3 className="text-2xl font-light text-[#1A1A1A] mb-6 uppercase">Student Requirements</h3>
+                        <h3 className="text-2xl font-light text-[#1A1A1A] mb-6 uppercase">Enrollment Requirements</h3>
                         <ul className="space-y-4 mb-8">
                             {REQUIREMENTS.map((item, idx) => (
                                 <li key={idx} className="flex items-start gap-4 text-gray-500 font-light tracking-wide text-sm leading-relaxed">
@@ -222,10 +223,10 @@ const Training = memo(function Training({ setPage }: TrainingProps) {
                         <div className="border-l-2 border-[#1A1A1A] pl-6 py-2">
                             <div className="flex items-center gap-3 mb-4">
                                 <AlertCircle className="text-[#1A1A1A]" size={16} strokeWidth={1.5} />
-                                <h3 className="text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest">Booking Policy</h3>
+                                <h3 className="text-[10px] font-bold text-[#1A1A1A] uppercase tracking-widest">Enrollment Policy</h3>
                             </div>
                             <p className="text-gray-500 font-light tracking-wide leading-relaxed text-xs">
-                                A non-refundable deposit secures your spot. The balance is due on day one. Spots are strictly limited.
+                                Due to the intimate nature of our masterclasses, availability is strictly limited. A non-refundable deposit is required to secure your seat.
                             </p>
                         </div>
                     </motion.div>
