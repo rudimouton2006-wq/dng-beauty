@@ -75,7 +75,7 @@ export default function Booking() {
   });
   
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const [isDayClosed, setIsDayClosed] = useState(false); // NEW STATE FOR CLOSED DAYS
+  const [isDayClosed, setIsDayClosed] = useState(false);
   const [isCheckingSlots, setIsCheckingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
@@ -93,7 +93,9 @@ export default function Booking() {
   const isExemptFromTechnical = isMasterclass || bookingData.serviceName.toLowerCase().includes('brow');
 
   const today = new Date().toISOString().split('T')[0];
-  const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
+  
+  // UPDATED: 1-hour interval slots from 10:00 to 18:00
+  const timeSlots = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
   // THE CHECK SLOT ENGINE
   useEffect(() => {
@@ -150,7 +152,7 @@ export default function Booking() {
       serviceId: service.id, 
       serviceName: service.name,
       totalPrice: parseInt(service.price.replace("R", "")),
-      time: service.isMasterclass ? "09:00" : ""
+      time: service.isMasterclass ? "10:00" : "" // UPDATED: Masterclass default time
     });
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -409,19 +411,21 @@ export default function Booking() {
                         </div>
                     )}
 
+                    {/* UPDATED MASTERCLASS TIME ALERT */}
                     {isMasterclass && !isDayClosed && (
                       <div className="mb-4 p-3 border border-gray-200 bg-gray-50 rounded-sm flex items-start gap-2">
                         <AlertCircle className="text-gray-500 shrink-0 mt-0.5" size={14} />
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
-                          Masterclasses require a 09:00 AM start. Day 2 will be blocked automatically.
+                          Masterclasses require a 10:00 AM start. Day 2 will be blocked automatically.
                         </p>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* DYNAMIC GRID - Uses 3 columns now to fit the 9 slots nicely */}
+                    <div className="grid grid-cols-3 gap-3">
                       {timeSlots.map(t => {
                         const isTaken = bookedSlots.includes(t);
-                        const isMasterclassLocked = isMasterclass && t !== "09:00";
+                        const isMasterclassLocked = isMasterclass && t !== "10:00"; // UPDATED Masterclass lock check
                         const isDisabled = isTaken || isMasterclassLocked || isDayClosed;
 
                         return (

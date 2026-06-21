@@ -55,7 +55,8 @@ const modalVariant = {
   exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } }
 };
 
-const ALL_TIME_SLOTS = ["09:00", "11:00", "13:00", "15:00", "17:00"];
+// UPDATED: 1-hour intervals from 10:00 to 18:00 to match the new booking schedule
+const ALL_TIME_SLOTS = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
 const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
