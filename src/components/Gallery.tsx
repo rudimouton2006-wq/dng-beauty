@@ -13,6 +13,7 @@ interface GalleryProps {
 
 // Full Image Roster Mapped Perfectly to Categories
 const GALLERY_IMAGES = [
+  { id: 13, category: "Classic", img: "/images/mega-classics-new.jpg" }, // NEW: Added from WhatsApp
   { id: 1, category: "Classic", img: "/images/classic-extensions.jpg" },
   { id: 2, category: "Classic", img: "/images/mega-classics.jpg" },
   { id: 3, category: "Hybrid", img: "/images/hybrid-extensions.jpg" },
@@ -61,7 +62,7 @@ const Gallery = memo(function Gallery({ setPage }: GalleryProps) {
             </p>
         </motion.div>
 
-        {/* Minimalist Category Filter (Matching Services UI) */}
+        {/* Minimalist Category Filter */}
         <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
             className="flex flex-wrap justify-center gap-6 mb-16 border-b border-gray-200 pb-4"

@@ -55,7 +55,6 @@ const modalVariant = {
   exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } }
 };
 
-// UPDATED: 1-hour intervals from 10:00 to 18:00 to match the new booking schedule
 const ALL_TIME_SLOTS = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
 const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
@@ -180,18 +179,15 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     }
   };
 
-  // --- NEW: INDIVIDUAL TIME SLOT BLOCKING ---
   const toggleSlotBlock = async (time: string) => {
     if (!selectedDate) return;
     const existingBlock = bookings.find(b => b.date === selectedDate && b.time === time && b.status === "blocked_slot");
 
     try {
         if (existingBlock) {
-            // Unblock it
             setBookings(prev => prev.filter(b => b.id !== existingBlock.id));
             await deleteDoc(doc(db, "bookings", existingBlock.id));
         } else {
-            // Block it
             const newBlock = {
                 date: selectedDate,
                 time: time,
@@ -267,95 +263,104 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
 
   const selectedDayBookings = bookings.filter(b => b.date === selectedDate);
   const isSelectedDayClosed = selectedDayBookings.some(b => b.status === "closed_day");
-  // Filter out the blocks from the actual appointment list so they don't show up as client cards
   const actualAppointments = selectedDayBookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot");
 
-  // 1. Daily Schedule Drawer
+  // 1. Daily Schedule Drawer (Fully Overhauled iOS App Aesthetic)
   const DayDrawer = () => {
     if (!isDrawerOpen) return null;
+
+    const dateObj = selectedDate ? new Date(selectedDate) : new Date();
+    const dayName = dateObj.toLocaleDateString('default', { weekday: 'long' });
+    const formattedDate = dateObj.toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' });
+
     return createPortal(
       <div className="fixed inset-0 z-[90] flex justify-end">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDrawerOpen(false)} className="absolute inset-0 bg-[#1A1A1A]/40 backdrop-blur-sm" />
-        <motion.div variants={drawerVariant} initial="hidden" animate="visible" exit="exit" className="relative w-full md:w-[500px] h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-gray-200">
-          <div className="bg-white p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDrawerOpen(false)} className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-sm" />
+        <motion.div variants={drawerVariant} initial="hidden" animate="visible" exit="exit" className="relative w-full md:w-[480px] h-full bg-[#FAF9F6] shadow-2xl flex flex-col">
+          
+          {/* iOS-Style App Header */}
+          <div className="bg-white px-8 py-10 border-b border-gray-100 flex justify-between items-start shrink-0 rounded-b-3xl shadow-sm z-10">
             <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-light text-[#1A1A1A] tracking-tight uppercase">Daily Schedule</h2>
-                <button onClick={toggleDayClose} className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest rounded-sm flex items-center gap-1.5 transition-colors ${isSelectedDayClosed ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'}`}>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-1">{dayName}</p>
+              <h2 className="text-3xl font-light text-[#1A1A1A] tracking-tight">{formattedDate}</h2>
+              <div className="mt-6 flex items-center gap-3">
+                <button onClick={toggleDayClose} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full flex items-center gap-2 transition-all ${isSelectedDayClosed ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-gray-50 text-[#1A1A1A] hover:bg-gray-100 border border-gray-200'}`}>
                     {isSelectedDayClosed ? <Lock size={12}/> : <Unlock size={12}/>}
-                    {isSelectedDayClosed ? "Day Closed" : "Close Day"}
+                    {isSelectedDayClosed ? "Day Locked" : "Lock Entire Day"}
                 </button>
               </div>
-              <p className="text-sm font-bold text-gray-500 mt-1">
-                {selectedDate ? new Date(selectedDate).toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ""}
-              </p>
             </div>
-            <button onClick={() => setIsDrawerOpen(false)} className="p-3 bg-gray-50 hover:bg-gray-100 rounded-sm transition-colors border border-gray-200">
+            <button onClick={() => setIsDrawerOpen(false)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors border border-gray-200">
               <X size={20} className="text-[#1A1A1A]" />
             </button>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-6">
+          <div className="flex-grow overflow-y-auto px-6 py-8">
             {isSelectedDayClosed && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm flex items-start gap-3">
-                    <Lock className="text-red-500 shrink-0 mt-0.5" size={18} />
+                <div className="mb-8 p-5 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-4">
+                    <Lock className="text-red-500 shrink-0 mt-0.5" size={20} />
                     <div>
-                        <h4 className="text-sm font-bold text-red-700 uppercase tracking-widest mb-1">Bookings Locked</h4>
-                        <p className="text-xs text-red-600 leading-relaxed">This day is closed. Clients cannot book new appointments on this date.</p>
+                        <h4 className="text-sm font-bold text-red-700 uppercase tracking-widest mb-1">Schedule Locked</h4>
+                        <p className="text-xs text-red-600 leading-relaxed font-medium">This day is completely closed. Clients cannot access these time slots.</p>
                     </div>
                 </div>
             )}
 
             {actualAppointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center opacity-50 py-6">
-                <CalendarIcon size={32} className="mb-3 text-gray-400" />
-                <h3 className="text-base font-light text-[#1A1A1A] uppercase">No Bookings</h3>
+              <div className="flex flex-col items-center justify-center text-center opacity-40 py-12">
+                <CalendarIcon size={40} className="mb-4 text-gray-400" />
+                <h3 className="text-lg font-light text-[#1A1A1A] uppercase">Schedule Clear</h3>
               </div>
             ) : (
               <div className="space-y-4">
                 {actualAppointments.sort((a, b) => a.time.localeCompare(b.time)).map((booking) => {
                   const isCompleted = booking.status === "completed";
                   const isCancelled = booking.status === "cancelled";
+                  
+                  // NEW WARM PASTEL LOGIC
+                  let cardStyle = "bg-[#FFF0E6] hover:shadow-md hover:-translate-y-0.5 border border-[#FFE5D4]"; // Warm Peach Active
+                  let textPrimary = "text-[#1A1A1A]";
+                  let textSecondary = "text-gray-600";
+                  
+                  if (isCancelled) {
+                      cardStyle = "bg-gray-50 opacity-60 grayscale border border-gray-200";
+                      textPrimary = "text-gray-500 line-through";
+                      textSecondary = "text-gray-400 line-through";
+                  } else if (isCompleted) {
+                      cardStyle = "bg-white opacity-70 border border-gray-200";
+                  } else if (booking.isDay2Ghost) {
+                      cardStyle = "bg-[#F3F4F6] border border-[#E5E7EB]"; // Soft neutral block
+                  }
 
                   return (
                     <motion.div layout key={booking.id} 
                       onClick={() => openClientDetails(booking)}
-                      className={`relative border rounded-sm p-5 shadow-sm transition-all duration-300 cursor-pointer ${
-                        isCancelled ? 'bg-gray-50 border-gray-200 opacity-60 grayscale'
-                        : booking.isDay2Ghost ? 'bg-indigo-50/40 border-l-4 border-l-indigo-500 border-indigo-100'
-                        : isCompleted ? 'bg-white border-l-4 border-l-gray-300 opacity-60 grayscale hover:grayscale-0'
-                        : 'bg-white border-l-4 border-l-[#1A1A1A] border-gray-200 hover:shadow-md hover:border-gray-400'
-                      }`}
+                      className={`relative p-5 rounded-2xl transition-all duration-300 cursor-pointer ${cardStyle}`}
                     >
-                      {booking.isDay2Ghost && !isCancelled && (
-                          <div className="absolute top-0 right-0 bg-indigo-100 text-indigo-700 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-sm">
-                              System Auto-Block
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <div className="flex items-center gap-2 mb-2">
+                              <span className="text-[10px] font-black bg-white/50 px-2 py-1 rounded-md text-[#1A1A1A] tracking-widest">
+                                  {booking.time}
+                              </span>
+                              {booking.isDay2Ghost && !isCancelled && <span className="text-[8px] font-bold uppercase tracking-widest text-gray-500 bg-gray-200/50 px-2 py-1 rounded-md">Auto-Block</span>}
+                              {isCancelled && <span className="text-[8px] font-bold uppercase tracking-widest text-red-500 bg-red-100/50 px-2 py-1 rounded-md">Cancelled</span>}
                           </div>
-                      )}
-                      {isCancelled && (
-                          <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-bl-sm">
-                              Cancelled
-                          </div>
-                      )}
+                          
+                          {/* Stacked Layout as requested */}
+                          <h3 className={`text-base sm:text-lg font-bold leading-tight ${textPrimary}`}>
+                              {booking.serviceName}
+                          </h3>
+                          <p className={`text-sm font-medium mt-1 ${textSecondary}`}>
+                              with {booking.customerName}
+                          </p>
+                        </div>
 
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-                              {isCancelled ? <X size={16} className="text-red-400"/> : <User size={16} className="text-gray-500" />}
-                          </div>
-                          <div>
-                              <h3 className={`text-base font-bold leading-tight ${isCancelled ? 'text-gray-500 line-through' : 'text-[#1A1A1A]'}`}>{booking.customerName}</h3>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{booking.serviceName}</span>
-                          </div>
+                        <div className="text-right shrink-0 pt-1">
+                            <span className={`text-base font-black ${isCancelled ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>
+                                {booking.isDay2Ghost ? '-' : `R${booking.totalPrice || 0}`}
+                            </span>
                         </div>
-                        <div className="text-right">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Total Fee</span>
-                            <span className={`text-sm font-black ${isCancelled ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 bg-[#FAF9F6] p-3 rounded-sm border border-gray-100">
-                          <div className="flex items-center gap-2 text-[#1A1A1A] font-medium text-xs"><Clock size={12} className="text-gray-400" /> {booking.time}</div>
-                          <div className="flex items-center gap-2 text-[#1A1A1A] font-medium text-xs"><Phone size={12} className="text-gray-400" /> {booking.customerPhone}</div>
                       </div>
                     </motion.div>
                   );
@@ -363,32 +368,32 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
               </div>
             )}
 
-            {/* NEW: SPECIFIC TIME SLOT MANAGEMENT UI */}
+            {/* Manage Individual Slots (Matches new smooth UI) */}
             {!isSelectedDayClosed && (
-                <div className="mt-10 border-t border-gray-200 pt-8 pb-10">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                        <Clock size={12} /> Manage Specific Slots
+                <div className="mt-12 pt-8">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2 px-2">
+                        <Clock size={12} /> Manage Specific Time Slots
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {ALL_TIME_SLOTS.map(time => {
                             const clientBooking = actualAppointments.find(b => b.time === time && b.status !== "cancelled");
                             const isManuallyBlocked = bookings.some(b => b.date === selectedDate && b.time === time && b.status === "blocked_slot");
 
                             return (
-                                <div key={time} className={`flex items-center justify-between p-3 border rounded-sm transition-colors ${isManuallyBlocked ? 'bg-red-50/50 border-red-100' : 'bg-white border-gray-100'}`}>
+                                <div key={time} className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isManuallyBlocked ? 'bg-red-50/50 border border-red-100' : 'bg-white border border-gray-100'}`}>
                                     <span className={`text-xs font-bold ${isManuallyBlocked ? 'text-red-500' : 'text-[#1A1A1A]'}`}>{time}</span>
                                     
                                     {clientBooking ? (
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 bg-gray-50 px-2 py-1 rounded-sm border border-gray-100">
-                                            Booked
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
+                                            Reserved
                                         </span>
                                     ) : (
                                         <button
                                             onClick={() => toggleSlotBlock(time)}
-                                            className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-sm transition-colors flex items-center gap-1.5 ${
+                                            className={`px-4 py-2 text-[9px] font-bold uppercase tracking-widest rounded-full transition-colors flex items-center gap-1.5 ${
                                                 isManuallyBlocked 
-                                                ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
-                                                : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                                                ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                                                : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-[#1A1A1A]'
                                             }`}
                                         >
                                             {isManuallyBlocked ? <Lock size={12} /> : <Unlock size={12} />}
@@ -409,7 +414,7 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     );
   };
 
-  // 2. Comprehensive Client & Booking Detail Modal
+  // 2. Comprehensive Client & Booking Detail Modal (Updated with rounded-2xl to match)
   const ClientDetailModal = () => {
     if (!selectedClientBooking) return null;
     
@@ -421,12 +426,12 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
     return createPortal(
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedClientBooking(null)} className="absolute inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm" />
-        <motion.div variants={modalVariant} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-[#FAF9F6] shadow-2xl rounded-sm flex flex-col">
+        <motion.div variants={modalVariant} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-[#FAF9F6] shadow-2xl rounded-2xl flex flex-col">
           
-          <div className="bg-white p-6 sm:p-8 border-b border-gray-200 sticky top-0 z-10 flex justify-between items-start">
+          <div className="bg-white p-6 sm:p-8 border-b border-gray-100 sticky top-0 z-10 flex justify-between items-start rounded-t-2xl">
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center shadow-inner shrink-0">
-                <User size={28} className="text-gray-500" />
+              <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center shrink-0">
+                <User size={28} className="text-gray-400" />
               </div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-light text-[#1A1A1A] tracking-tight uppercase">{selectedClientBooking.customerName}</h2>
@@ -436,30 +441,30 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                 </div>
               </div>
             </div>
-            <button onClick={() => setSelectedClientBooking(null)} className="p-2 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-sm transition-colors"><X size={20} className="text-[#1A1A1A]" /></button>
+            <button onClick={() => setSelectedClientBooking(null)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors border border-gray-100"><X size={20} className="text-[#1A1A1A]" /></button>
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
             {selectedClientBooking.isDay2Ghost && !isCancelled && (
-                <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 p-4 rounded-sm flex items-center gap-3">
+                <div className="bg-gray-50 border border-gray-200 text-gray-600 p-4 rounded-xl flex items-center gap-3">
                     <AlertCircle size={18} />
                     <p className="text-xs font-bold uppercase tracking-widest">This is a system-generated block for Day 2 of a Masterclass.</p>
                 </div>
             )}
             {isCancelled && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-sm flex items-center gap-3">
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
                     <AlertCircle size={18} />
                     <p className="text-xs font-bold uppercase tracking-widest">This appointment has been cancelled. The slot is open.</p>
                 </div>
             )}
 
             <div>
-              <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-200 pb-2">Selected Appointment</h3>
-              <div className="bg-white border border-gray-200 rounded-sm p-6 shadow-sm">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 ml-2">Selected Appointment</h3>
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                   <div>
                     <h4 className="text-xl font-bold text-[#1A1A1A]">{selectedClientBooking.serviceName}</h4>
-                    <div className="flex items-center gap-4 mt-2 text-sm font-medium text-gray-600">
+                    <div className="flex items-center gap-4 mt-2 text-sm font-medium text-gray-500">
                       <span className="flex items-center gap-1.5"><CalendarIcon size={16} /> {selectedClientBooking.date}</span>
                       <span className="flex items-center gap-1.5"><Clock size={16} /> {selectedClientBooking.time}</span>
                     </div>
@@ -471,20 +476,20 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                 </div>
 
                 {!selectedClientBooking.isDay2Ghost && selectedClientBooking.eyeShape !== "N/A" && (
-                    <div className="bg-[#FAF9F6] border border-gray-200 rounded-sm p-4 mb-6">
+                    <div className="bg-[#FAF9F6] rounded-xl p-4 mb-6">
                     <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
                         <ClipboardList size={14} /> Consultation Form
                     </h5>
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div><span className="text-gray-400 block text-xs">Eye Shape:</span><span className="font-bold">{selectedClientBooking.eyeShape || 'N/A'}</span></div>
-                        <div><span className="text-gray-400 block text-xs">Mapping:</span><span className="font-bold">{selectedClientBooking.preferredMapping || 'N/A'}</span></div>
-                        <div className="col-span-2"><span className="text-gray-400 block text-xs">Allergies/Notes:</span><span className="font-bold text-orange-600">{selectedClientBooking.allergies || 'None reported'}</span></div>
+                        <div><span className="text-gray-400 block text-xs mb-1">Eye Shape:</span><span className="font-bold">{selectedClientBooking.eyeShape || 'N/A'}</span></div>
+                        <div><span className="text-gray-400 block text-xs mb-1">Mapping:</span><span className="font-bold">{selectedClientBooking.preferredMapping || 'N/A'}</span></div>
+                        <div className="col-span-2"><span className="text-gray-400 block text-xs mb-1">Allergies/Notes:</span><span className="font-bold text-orange-600">{selectedClientBooking.allergies || 'None reported'}</span></div>
                     </div>
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
-                  <div className="flex-1 bg-gray-50 p-4 rounded-sm border border-gray-200 flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-50">
+                  <div className="flex-1 bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Deposit Status</span>
                       <span className="text-sm font-bold text-[#1A1A1A] flex items-center gap-2">
@@ -498,26 +503,26 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                   <div className="flex-1 flex gap-2">
                     {!isCompleted && !isCancelled ? (
                       <>
-                        <button onClick={() => markAsCompleted(selectedClientBooking.id)} className="flex-1 py-3 bg-[#1A1A1A] text-white font-black uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-sm flex items-center justify-center gap-2 shadow-sm border border-[#1A1A1A]">
+                        <button onClick={() => markAsCompleted(selectedClientBooking.id)} className="flex-1 py-3 bg-[#1A1A1A] text-white font-black uppercase text-[10px] hover:bg-gray-800 transition-colors rounded-xl flex items-center justify-center gap-2 shadow-sm border border-[#1A1A1A]">
                           <CheckCircle2 size={16} /> Mark Done
                         </button>
-                        <button onClick={() => cancelBooking(selectedClientBooking.id)} className="px-4 py-3 bg-red-50 text-red-600 font-black uppercase text-[10px] hover:bg-red-100 transition-colors rounded-sm flex items-center justify-center border border-red-200" title="Cancel Appointment">
+                        <button onClick={() => cancelBooking(selectedClientBooking.id)} className="px-5 py-3 bg-red-50 text-red-600 font-black uppercase text-[10px] hover:bg-red-100 transition-colors rounded-xl flex items-center justify-center border border-red-100" title="Cancel Appointment">
                           <Trash2 size={16} />
                         </button>
                       </>
                     ) : isCompleted ? (
-                      <div className="flex-1 py-3 bg-gray-100 text-gray-500 font-black uppercase text-[10px] rounded-sm flex items-center justify-center gap-2 border border-gray-200">
+                      <div className="flex-1 py-3 bg-gray-50 text-gray-500 font-black uppercase text-[10px] rounded-xl flex items-center justify-center gap-2 border border-gray-100">
                         <CheckCircle2 size={16} /> Completed
                       </div>
                     ) : (
-                      <div className="flex-1 py-3 bg-red-50 text-red-600 font-black uppercase text-[10px] rounded-sm flex items-center justify-center gap-2 border border-red-200">
+                      <div className="flex-1 py-3 bg-red-50 text-red-600 font-black uppercase text-[10px] rounded-xl flex items-center justify-center gap-2 border border-red-100">
                         <X size={16} /> Cancelled
                       </div>
                     )}
                     
                     {!selectedClientBooking.isDay2Ghost && !isCancelled && (
                         <button onClick={() => sendWhatsAppReminder(selectedClientBooking.customerName, selectedClientBooking.customerPhone, selectedClientBooking.time, selectedClientBooking.serviceName)} 
-                        className="px-5 py-3 bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-colors rounded-sm flex items-center justify-center border border-[#25D366]/20"
+                        className="px-5 py-3 bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-colors rounded-xl flex items-center justify-center border border-[#25D366]/20"
                         title="Send Reminder via WhatsApp"
                         >
                             <MessageSquare size={18} />
@@ -530,24 +535,24 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
 
             {!selectedClientBooking.isDay2Ghost && (
                 <div>
-                <div className="flex justify-between items-end mb-3 border-b border-gray-200 pb-2">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Client History</h3>
+                <div className="flex justify-between items-end mb-3 ml-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Client History</h3>
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Value: R{lifetimeValue}</span>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-sm overflow-hidden shadow-sm">
+                <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
                     {clientHistory.length <= 1 ? (
-                    <div className="p-6 text-center text-sm font-medium text-gray-400">This is the client's first booking.</div>
+                    <div className="p-8 text-center text-sm font-medium text-gray-400">This is the client's first booking.</div>
                     ) : (
-                    <div className="divide-y divide-gray-100 max-h-[250px] overflow-y-auto">
+                    <div className="divide-y divide-gray-50 max-h-[250px] overflow-y-auto">
                         {clientHistory.map(hist => (
-                        <div key={hist.id} className={`p-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${hist.id === selectedClientBooking.id ? 'bg-[#FAF9F6]' : ''}`}>
+                        <div key={hist.id} className={`p-5 flex items-center justify-between hover:bg-gray-50 transition-colors ${hist.id === selectedClientBooking.id ? 'bg-[#FAF9F6]' : ''}`}>
                             <div>
                             <p className={`text-sm font-bold ${hist.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-[#1A1A1A]'}`}>{hist.serviceName}</p>
-                            <p className="text-xs font-medium text-gray-500">{hist.date} • {hist.time}</p>
+                            <p className="text-xs font-medium text-gray-400 mt-0.5">{hist.date} • {hist.time}</p>
                             </div>
                             <div className="text-right">
-                            <span className={`text-sm font-black block ${hist.status === 'cancelled' ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>R{hist.totalPrice || 0}</span>
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${hist.status === 'completed' ? 'text-gray-400' : hist.status === 'cancelled' ? 'text-red-500' : 'text-orange-500'}`}>
+                            <span className={`text-sm font-black block ${hist.status === 'cancelled' ? 'text-gray-300' : 'text-[#1A1A1A]'}`}>R{hist.totalPrice || 0}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest mt-0.5 block ${hist.status === 'completed' ? 'text-gray-400' : hist.status === 'cancelled' ? 'text-red-400' : 'text-orange-400'}`}>
                                 {hist.status === 'completed' ? 'Done' : hist.status === 'cancelled' ? 'Cancelled' : 'Upcoming'}
                             </span>
                             </div>
@@ -567,18 +572,18 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
 
   return (
     <main className="min-h-screen bg-[#FAF9F6] font-sans text-[#1A1A1A] selection:bg-[#1A1A1A] selection:text-white pb-20">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-6 lg:px-12 h-24 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-light tracking-tight text-[#1A1A1A] uppercase">Dashboard</h1>
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mt-1">Hello, Gabby</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">Hello, Gabby</p>
           </div>
           
           <div className="flex items-center gap-3">
-            <button onClick={handleRefresh} disabled={isRefreshing} className="p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-sm transition-all">
-              <RefreshCcw size={18} className={`text-gray-600 ${isRefreshing ? "animate-spin" : ""}`} />
+            <button onClick={handleRefresh} disabled={isRefreshing} className="p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full transition-all">
+              <RefreshCcw size={18} className={`text-[#1A1A1A] ${isRefreshing ? "animate-spin" : ""}`} />
             </button>
-            <button onClick={() => setPage("home")} className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500 hover:text-[#1A1A1A] bg-white border border-gray-200 hover:bg-gray-50 px-5 py-3 rounded-sm transition-colors">
+            <button onClick={() => setPage("home")} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-[#1A1A1A] bg-white border border-gray-200 hover:bg-gray-50 px-6 py-3.5 rounded-full transition-colors">
               <LogOut size={14} /> Exit
             </button>
           </div>
@@ -586,63 +591,65 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
       </header>
 
       <div className="max-w-[1600px] mx-auto px-6 lg:px-12 mt-10">
-        <div className="flex gap-4 mb-8 border-b border-gray-200 pb-4 overflow-x-auto">
-            <button onClick={() => setActiveTab("calendar")} className={`flex items-center gap-2 px-6 py-3 rounded-sm text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap border ${activeTab === "calendar" ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-gray-500 hover:bg-gray-50 border-gray-200"}`}>
+        <div className="flex gap-3 mb-8 border-b border-gray-200 pb-4 overflow-x-auto hide-scrollbar">
+            <button onClick={() => setActiveTab("calendar")} className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap border ${activeTab === "calendar" ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-gray-500 hover:bg-gray-50 border-gray-200"}`}>
                 <CalendarIcon size={14} /> Calendar
             </button>
-            <button onClick={() => setActiveTab("history")} className={`flex items-center gap-2 px-6 py-3 rounded-sm text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap border ${activeTab === "history" ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-gray-500 hover:bg-gray-50 border-gray-200"}`}>
+            <button onClick={() => setActiveTab("history")} className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap border ${activeTab === "history" ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-gray-500 hover:bg-gray-50 border-gray-200"}`}>
                 <History size={14} /> Booking History
             </button>
         </div>
 
+        {/* Dashboard Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white p-6 rounded-sm shadow-sm border border-gray-200 flex items-center justify-between">
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-black uppercase tracking-widest text-gray-400 block mb-1">Income This Month</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Income This Month</span>
                   <span className="text-4xl font-light text-[#1A1A1A]">R{stats.currentIncome}</span>
                 </div>
-                <div className="w-14 h-14 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center border border-gray-100"><TrendingUp size={24} /></div>
+                <div className="w-14 h-14 rounded-full bg-[#FFF0E6] text-[#1A1A1A] flex items-center justify-center"><TrendingUp size={24} /></div>
             </motion.div>
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-sm shadow-sm border border-gray-200 flex flex-col justify-center">
-                <span className="text-xs font-black uppercase tracking-widest text-gray-400 block mb-1">Income Last Month</span>
-                <span className="text-2xl font-light text-gray-600">R{stats.prevIncome}</span>
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ delay: 0.1 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Income Last Month</span>
+                <span className="text-2xl font-light text-gray-500">R{stats.prevIncome}</span>
             </motion.div>
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ delay: 0.2 }} className="bg-white p-6 rounded-sm shadow-sm border border-gray-200 flex flex-col justify-center">
-                <span className="text-xs font-black uppercase tracking-widest text-gray-400 block mb-1">Upcoming Bookings</span>
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ delay: 0.2 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Upcoming Bookings</span>
                 <span className="text-2xl font-light text-[#1A1A1A]">{stats.upcomingCount}</span>
             </motion.div>
         </div>
 
         {error && (
-            <div className="p-6 bg-red-50 border border-red-100 rounded-sm flex items-start gap-4 mb-8">
-                <AlertCircle className="text-red-600 shrink-0" />
+            <div className="p-6 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-4 mb-8">
+                <AlertCircle className="text-red-600 shrink-0 mt-0.5" />
                 <p className="text-sm font-bold text-red-800">{error}</p>
             </div>
         )}
 
+        {/* Calendar Grid View */}
         {isLoading ? (
             <div className="py-32 flex flex-col items-center justify-center">
-              <Loader2 size={40} className="animate-spin text-gray-400 mb-4" />
-              <span className="text-xs font-black uppercase tracking-widest text-gray-400">Loading Bookings...</span>
+              <Loader2 size={40} className="animate-spin text-gray-300 mb-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Workspace...</span>
             </div>
         ) : activeTab === "calendar" ? (
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-gray-200 rounded-sm p-8 shadow-sm">
-                <div className="flex justify-between items-center mb-8">
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-10">
                   <h2 className="text-2xl font-light text-[#1A1A1A] tracking-tight uppercase">
                     {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </h2>
                   <div className="flex gap-2">
-                    <button onClick={prevMonth} className="p-3 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-sm transition-colors"><ChevronLeft size={20} className="text-[#1A1A1A]" /></button>
-                    <button onClick={nextMonth} className="p-3 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-sm transition-colors"><ChevronRight size={20} className="text-[#1A1A1A]" /></button>
+                    <button onClick={prevMonth} className="p-3 bg-gray-50 border border-gray-100 hover:bg-gray-100 rounded-full transition-colors"><ChevronLeft size={20} className="text-[#1A1A1A]" /></button>
+                    <button onClick={nextMonth} className="p-3 bg-gray-50 border border-gray-100 hover:bg-gray-100 rounded-full transition-colors"><ChevronRight size={20} className="text-[#1A1A1A]" /></button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-7 gap-4 mb-4 text-center">
                   {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
-                    <div key={day} className="text-xs font-black tracking-widest uppercase text-gray-400 hidden md:block">{day}</div>
+                    <div key={day} className="text-[10px] font-black tracking-widest uppercase text-gray-400 hidden md:block">{day}</div>
                   ))}
                   {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                    <div key={day} className="text-xs font-black tracking-widest uppercase text-gray-400 md:hidden">{day}</div>
+                    <div key={day} className="text-[10px] font-black tracking-widest uppercase text-gray-400 md:hidden">{day}</div>
                   ))}
                 </div>
 
@@ -652,31 +659,32 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                     const dayNum = parseInt(dateString.split('-')[2]);
                     const dayBookings = bookings.filter(b => b.date === dateString);
                     const isClosed = dayBookings.some(b => b.status === "closed_day");
-                    // Show dots only for valid client appts (not blocks, not cancelled)
                     const validAppts = dayBookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot" && b.status !== "cancelled");
                     const hasPending = validAppts.some(b => b.status !== "completed");
                     
                     return (
-                      <button key={dateString} onClick={() => openDaySchedule(dateString)} className={`relative aspect-square md:aspect-[4/3] rounded-sm flex flex-col items-center md:items-start justify-center md:justify-start md:p-4 transition-all duration-300 border group ${isClosed ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : validAppts.length > 0 ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] hover:scale-105 shadow-md z-10' : 'bg-gray-50 border-gray-200 hover:border-gray-400 hover:bg-white text-gray-600'}`}>
+                      <button key={dateString} onClick={() => openDaySchedule(dateString)} className={`relative aspect-square md:aspect-[4/3] rounded-2xl flex flex-col items-center md:items-start justify-center md:justify-start md:p-4 transition-all duration-300 border group ${isClosed ? 'bg-red-50/50 border-red-100 text-red-400 hover:bg-red-50' : validAppts.length > 0 ? 'bg-[#FFF0E6] text-[#1A1A1A] border-[#FFE5D4] hover:shadow-md z-10' : 'bg-gray-50 border-gray-100 hover:bg-white hover:border-gray-300 text-gray-500'}`}>
                         <div className="flex w-full justify-between items-start">
                             <span className="text-lg md:text-xl font-bold">{dayNum}</span>
-                            {isClosed && <Lock size={12} className="text-red-400 mt-1 md:mt-1.5" />}
+                            {isClosed && <Lock size={14} className="text-red-300 mt-1 md:mt-1.5" />}
                         </div>
                         {validAppts.length > 0 && !isClosed && (
                           <div className="mt-auto hidden md:flex flex-col w-full gap-1">
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-sm text-left truncate ${hasPending ? 'bg-white text-[#1A1A1A]' : 'bg-white/20 text-white'}`}>
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1.5 rounded-lg text-left truncate ${hasPending ? 'bg-white shadow-sm text-[#1A1A1A]' : 'bg-[#1A1A1A]/10 text-[#1A1A1A]'}`}>
                               {validAppts.length} Appt{validAppts.length > 1 ? 's' : ''}
                             </span>
                           </div>
                         )}
-                        {validAppts.length > 0 && !isClosed && <div className={`absolute bottom-2 w-2 h-2 rounded-full md:hidden ${hasPending ? 'bg-white' : 'bg-white/30'}`} />}
+                        {validAppts.length > 0 && !isClosed && <div className={`absolute bottom-3 w-2 h-2 rounded-full md:hidden ${hasPending ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A]/30'}`} />}
                       </button>
                     );
                   })}
                 </div>
             </motion.div>
         ) : (
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-gray-200 rounded-sm p-8 shadow-sm">
+            
+            /* All Bookings History View */
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
                 <h2 className="text-2xl font-light uppercase text-[#1A1A1A] mb-8">All Bookings</h2>
                 {bookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot").length === 0 ? (
                     <p className="text-gray-400 text-sm font-medium">No bookings have been made yet.</p>
@@ -684,22 +692,29 @@ const Dashboard = memo(function Dashboard({ setPage }: DashboardProps) {
                     <div className="space-y-4">
                         {bookings.filter(b => b.status !== "closed_day" && b.status !== "blocked_slot").map(booking => {
                             const isCancelled = booking.status === "cancelled";
+                            
+                            // History Card Pastel Logic
+                            let cardStyle = "bg-[#FFF0E6] hover:shadow-md border border-[#FFE5D4]"; 
+                            if (isCancelled) cardStyle = "bg-gray-50 opacity-60 grayscale border border-gray-200";
+                            else if (booking.status === "completed") cardStyle = "bg-white border border-gray-200 opacity-80 hover:opacity-100";
+                            else if (booking.isDay2Ghost) cardStyle = "bg-[#F3F4F6] border border-[#E5E7EB]";
+
                             return (
-                                <div key={booking.id} onClick={() => openClientDetails(booking)} className={`flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-sm hover:bg-gray-50 transition-all cursor-pointer gap-4 ${isCancelled ? 'border-gray-200 bg-gray-50 opacity-70 grayscale' : booking.isDay2Ghost ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-200'}`}>
+                                <div key={booking.id} onClick={() => openClientDetails(booking)} className={`flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl transition-all cursor-pointer gap-4 ${cardStyle}`}>
                                     <div>
                                         <div className="flex items-center gap-3">
-                                        <h4 className={`text-base font-bold ${isCancelled ? 'text-gray-500 line-through' : 'text-[#1A1A1A]'}`}>{booking.customerName}</h4>
-                                        {booking.isDay2Ghost && !isCancelled && <span className="bg-indigo-100 text-indigo-700 text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm">Auto-Block</span>}
+                                          <h4 className={`text-base font-bold ${isCancelled ? 'text-gray-500 line-through' : 'text-[#1A1A1A]'}`}>{booking.serviceName}</h4>
+                                          {booking.isDay2Ghost && !isCancelled && <span className="bg-gray-200 text-gray-600 text-[8px] font-bold uppercase tracking-widest px-2 py-1 rounded-md">Auto-Block</span>}
                                         </div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mt-1">{booking.serviceName}</p>
+                                        <p className="text-sm font-medium text-gray-500 mt-1">with {booking.customerName}</p>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600">
-                                        <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-gray-400" /> {booking.date}</div>
-                                        <div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400" /> {booking.time}</div>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600 bg-white/50 px-4 py-2 rounded-lg">
+                                        <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-[#1A1A1A]" /> {booking.date}</div>
+                                        <div className="flex items-center gap-1.5"><Clock size={14} className="text-[#1A1A1A]" /> {booking.time}</div>
                                     </div>
-                                    <div className="text-right flex items-center justify-between md:block">
-                                        <span className={`text-sm font-black block ${isCancelled ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
-                                        <span className={`text-[10px] uppercase tracking-widest font-black ${booking.status === "completed" ? "text-gray-400" : isCancelled ? "text-red-500" : "text-orange-500"}`}>
+                                    <div className="text-right flex items-center justify-between md:flex-col md:items-end md:justify-center">
+                                        <span className={`text-base font-black block ${isCancelled ? 'text-gray-400' : 'text-[#1A1A1A]'}`}>{booking.isDay2Ghost ? 'Included' : `R${booking.totalPrice || 0}`}</span>
+                                        <span className={`text-[9px] uppercase tracking-widest font-black mt-1 ${booking.status === "completed" ? "text-gray-400" : isCancelled ? "text-red-500" : "text-[#1A1A1A]/50"}`}>
                                             {booking.status === "completed" ? "Done" : isCancelled ? "Cancelled" : "Upcoming"}
                                         </span>
                                     </div>
