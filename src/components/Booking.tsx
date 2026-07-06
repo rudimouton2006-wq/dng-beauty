@@ -45,8 +45,11 @@ const BOOKABLE_SERVICES: Service[] = [
   { id: "clu-vol", name: "Clusters - Volume", price: "R200", category: "Clusters", duration: "30 Min" },
   { id: "clu-vol-cat", name: "Clusters - Volume Cat Eye", price: "R220", category: "Clusters", duration: "30 Min" },
   { id: "clu-wispy", name: "Clusters - Wispy Set", price: "R250", category: "Clusters", duration: "30 Min" },
-  { id: "add-brow", name: "Brow Shape", price: "R50", category: "Add-Ons", duration: "30 Min" },
-  { id: "add-brow-tint", name: "Brow Shape + Tint", price: "R100", category: "Add-Ons", duration: "1 Hour" },
+  // UPDATED PRICING & NEW LIP WAX ADDED BELOW
+  { id: "add-brow", name: "Brow Shape", price: "R100", category: "Add-Ons", duration: "30 Min" },
+  { id: "add-tint", name: "Brow Tint", price: "R100", category: "Add-Ons", duration: "30 Min" },
+  { id: "add-brow-tint", name: "Brow Shape + Tint", price: "R200", category: "Add-Ons", duration: "1 Hour" },
+  { id: "add-lip-wax", name: "Lip Wax", price: "R100", category: "Add-Ons", duration: "15 Min" },
   { id: "add-brow-lam", name: "Brow Lamination + Free Tint", price: "R300", category: "Add-Ons", duration: "45 Min" },
   { id: "add-lash-lift", name: "Lash Lift", price: "R350", category: "Add-Ons", duration: "60 Min" },
   { id: "m-class", name: "2-Day Lash Masterclass", price: "R3500", category: "Training", duration: "2 Days", isMasterclass: true }
@@ -90,14 +93,12 @@ export default function Booking() {
   const selectedServiceObj = BOOKABLE_SERVICES.find(s => s.id === bookingData.serviceId);
   const isMasterclass = selectedServiceObj?.isMasterclass || false;
   
-  const isExemptFromTechnical = isMasterclass || bookingData.serviceName.toLowerCase().includes('brow');
+  const isExemptFromTechnical = isMasterclass || bookingData.serviceName.toLowerCase().includes('brow') || bookingData.serviceName.toLowerCase().includes('wax');
 
   const today = new Date().toISOString().split('T')[0];
   
-  // UPDATED: 1-hour interval slots from 10:00 to 18:00
   const timeSlots = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
-  // THE CHECK SLOT ENGINE
   useEffect(() => {
     if (!bookingData.date) {
       setBookedSlots([]);
@@ -119,10 +120,8 @@ export default function Booking() {
         snapshot.forEach(doc => {
           const data = doc.data();
           if (data.status === "closed_day") {
-            // Admin locked this day
             dayClosed = true;
           } else if (data.status !== "cancelled" && data.booking_status !== "cancelled") {
-            // Ignore cancelled slots, push taken ones
             taken.push(data.time);
           }
         });
@@ -131,7 +130,6 @@ export default function Booking() {
           setIsDayClosed(dayClosed);
           setBookedSlots(taken);
           if (dayClosed || taken.includes(bookingData.time)) {
-            // Clear their selected time if it's taken or the day is closed
             setBookingData(prev => ({ ...prev, time: "" }));
           }
         }
@@ -152,7 +150,7 @@ export default function Booking() {
       serviceId: service.id, 
       serviceName: service.name,
       totalPrice: parseInt(service.price.replace("R", "")),
-      time: service.isMasterclass ? "10:00" : "" // UPDATED: Masterclass default time
+      time: service.isMasterclass ? "10:00" : "" 
     });
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -401,7 +399,6 @@ export default function Booking() {
                       {isCheckingSlots && <Loader2 size={12} className="animate-spin text-gray-400" />}
                     </div>
                     
-                    {/* CLOSED DAY ALERT MESSAGE */}
                     {isDayClosed && (
                         <div className="mb-4 p-3 border border-red-200 bg-red-50 rounded-sm flex items-start gap-2">
                             <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={14} />
@@ -411,7 +408,6 @@ export default function Booking() {
                         </div>
                     )}
 
-                    {/* UPDATED MASTERCLASS TIME ALERT */}
                     {isMasterclass && !isDayClosed && (
                       <div className="mb-4 p-3 border border-gray-200 bg-gray-50 rounded-sm flex items-start gap-2">
                         <AlertCircle className="text-gray-500 shrink-0 mt-0.5" size={14} />
@@ -421,11 +417,10 @@ export default function Booking() {
                       </div>
                     )}
 
-                    {/* DYNAMIC GRID - Uses 3 columns now to fit the 9 slots nicely */}
                     <div className="grid grid-cols-3 gap-3">
                       {timeSlots.map(t => {
                         const isTaken = bookedSlots.includes(t);
-                        const isMasterclassLocked = isMasterclass && t !== "10:00"; // UPDATED Masterclass lock check
+                        const isMasterclassLocked = isMasterclass && t !== "10:00";
                         const isDisabled = isTaken || isMasterclassLocked || isDayClosed;
 
                         return (
