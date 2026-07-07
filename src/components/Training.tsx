@@ -60,7 +60,7 @@ const INCLUSIONS = [
   { icon: Briefcase, text: "Premium Lash Kit" },
   { icon: Scissors, text: "Practical Execution" },
   { icon: UserCheck, text: "Live Model Evaluation" },
-  { icon: Award, text: "Accredited Certification" },
+  { icon: Award, text: "Certificate of Completion" },
   { icon: CheckCircle2, text: "Lifetime Mentorship" }
 ];
 
